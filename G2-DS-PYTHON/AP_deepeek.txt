@@ -1,0 +1,29 @@
+import pytest
+from component_a import subtract_numbers
+from component_b import divide_by_constant
+
+class TestComponentIntegration:
+    def test_success_flow_valid_input(self):
+        result_a = subtract_numbers(10, 5)
+        result_b = divide_by_constant(result_a)
+        assert result_b == 1.0  # (10-5)/5
+
+    def test_division_by_zero_error(self):
+        result_a = subtract_numbers(8, 3)
+        with pytest.raises(ValueError, match="Constant cannot be zero."):
+            divide_by_constant(result_a, constant=0)
+
+    def test_invalid_input_propagates(self):
+        with pytest.raises(TypeError):
+            invalid_result = subtract_numbers("5", 3)
+            divide_by_constant(invalid_result)
+
+    def test_edge_cases_zero_subtraction(self):
+        result_a = subtract_numbers(0, 0)
+        result_b = divide_by_constant(result_a, constant=2)
+        assert result_b == 0.0  # (0-0)/2
+
+    def test_negative_result_handling(self):
+        result_a = subtract_numbers(3, 7)
+        result_b = divide_by_constant(result_a)
+        assert result_b == -0.8  # (-4)/5

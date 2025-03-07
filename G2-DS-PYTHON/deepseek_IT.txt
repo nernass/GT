@@ -1,0 +1,29 @@
+```python
+import pytest
+from component_a import subtract_numbers
+from component_b import divide_by_constant
+
+def test_valid_integration():
+    a_result = subtract_numbers(10, 5)
+    b_result = divide_by_constant(a_result)
+    assert b_result == 1  # (10-5)/5 = 1
+
+def test_negative_result_integration():
+    a_result = subtract_numbers(3, 5)
+    b_result = divide_by_constant(a_result)
+    assert b_result == -0.4  # (3-5)/5 = -0.4
+
+def test_division_by_zero_error_propagation():
+    a_result = subtract_numbers(8, 3)
+    with pytest.raises(ValueError, match="Constant cannot be zero"):
+        divide_by_constant(a_result, 0)
+
+def test_invalid_input_component_a():
+    with pytest.raises(TypeError):
+        subtract_numbers("invalid", 5)
+
+def test_invalid_input_component_b():
+    a_result = subtract_numbers(10, 5)  # Valid result from A
+    with pytest.raises(TypeError):
+        divide_by_constant("invalid_input")  # Invalid input to B
+```

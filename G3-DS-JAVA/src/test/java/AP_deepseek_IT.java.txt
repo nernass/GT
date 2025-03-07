@@ -1,0 +1,58 @@
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
+
+import java.util.Map;
+import javax.sql.DataSource;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.datasource.embedded.EmbeddedDatabaseBuilder;
+import org.springframework.jdbc.datasource.embedded.EmbeddedDatabaseType;
+
+class ComponentIntegrationTest {
+    private ComponentA componentA;
+    private ComponentB componentB;
+    private JdbcTemplate jdbcTemplate;
+    
+    @Mock
+    private DataSource mockDataSource;
+
+    @BeforeEach
+    void setup() {
+        MockitoAnnotations.openMocks(this);
+        // Setup real embedded database for integration flow
+        DataSource realDataSource = new EmbeddedDatabaseBuilder()
+            .setType(EmbeddedDatabaseType.H2)
+            .addScript("CREATE TABLE users (name VARCHAR(255), email VARCHAR(255))")
+            .build();
+        
+        componentA = new ComponentA(realDataSource);
+        componentB = new ComponentB(realDataSource);
+        jdbcTemplate = new JdbcTemplate(realDataSource);
+    }
+
+    @Test
+    void successFlow_InsertAndRetrieveUser() {
+        componentA.insertUser("Alice", "alice@example.com");
+        Map<String, Object> result = componentB.getUserByEmail("alice@example.com");
+        
+        assertEquals("Alice", result.get("NAME"));
+        assertEquals("alice@example.com", result.get("EMAIL"));
+    }
+
+    @Test
+    void partialFailure_InvalidEmailRetrieval() {
+        componentA.insertUser("Bob", "bob@example.com");
+        
+        assertThrows(org.springframework.dao.EmptyResultDataAccessException.class, 
+            () -> componentB.getUserByEmail("invalid@example.com"));
+    }
+
+    @Test
+    void edgeCase_EmptyFieldHandling() {
+        assertThrows(org.springframework.jdbc.BadSqlGrammarException.class,
+            () -> componentA.insertUser("", "")); // Assumes DB constraints
+    }
+}

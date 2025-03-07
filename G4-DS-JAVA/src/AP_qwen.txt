@@ -1,0 +1,93 @@
+```java
+import static org.mockito.Mockito.*;
+import static org.junit.jupiter.api.Assertions.*;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
+import org.springframework.jdbc.core.JdbcTemplate;
+
+import javax.sql.DataSource;
+import java.util.HashMap;
+import java.util.Map;
+
+class IntegrationTest {
+
+    @Mock
+    private DataSource dataSource;
+
+    @Mock
+    private JdbcTemplate jdbcTemplate;
+
+    @InjectMocks
+    private ComponentA componentA;
+
+    @InjectMocks
+    private ComponentB componentB;
+
+    @BeforeEach
+    void setUp() {
+        MockitoAnnotations.openMocks(this);
+        when(dataSource.getConnection()).thenReturn(null); // Mock connection
+        when(new JdbcTemplate(dataSource)).thenReturn(jdbcTemplate);
+    }
+
+    @Test
+    void testIntegrationSuccess() {
+        // Arrange
+        int userId = 1;
+        String newEmail = "new.email@example.com";
+        Map<String, Object> expectedUser = new HashMap<>();
+        expectedUser.put("id", userId);
+        expectedUser.put("email", newEmail);
+
+        when(jdbcTemplate.queryForMap(anyString(), anyInt())).thenReturn(expectedUser);
+
+        // Act
+        componentA.updateUserEmail(userId, newEmail);
+        Map<String, Object> resultUser = componentB.getUserById(userId);
+
+        // Assert
+        assertEquals(expectedUser, resultUser);
+        verify(jdbcTemplate).update(anyString(), eq(newEmail), eq(userId));
+        verify(jdbcTemplate).queryForMap(anyString(), eq(userId));
+    }
+
+    @Test
+    void testIntegrationFailure() {
+        // Arrange
+        int userId = 1;
+        String newEmail = "new.email@example.com";
+
+        when(jdbcTemplate.queryForMap(anyString(), anyInt())).thenThrow(new RuntimeException("Database error"));
+
+        // Act & Assert
+        componentA.updateUserEmail(userId, newEmail);
+        Exception exception = assertThrows(RuntimeException.class, () -> {
+            componentB.getUserById(userId);
+        });
+        assertEquals("Database error", exception.getMessage());
+        verify(jdbcTemplate).update(anyString(), eq(newEmail), eq(userId));
+        verify(jdbcTemplate).queryForMap(anyString(), eq(userId));
+    }
+
+    @Test
+    void testIntegrationEdgeCase() {
+        // Arrange
+        int userId = 0;
+        String newEmail = "";
+
+        // Act & Assert
+        assertThrows(RuntimeException.class, () -> {
+            componentA.updateUserEmail(userId, newEmail);
+        });
+        Exception exception = assertThrows(RuntimeException.class, () -> {
+            componentB.getUserById(userId);
+        });
+        verify(jdbcTemplate, never()).update(anyString(), eq(newEmail), eq(userId));
+        verify(jdbcTemplate, never()).queryForMap(anyString(), eq(userId));
+    }
+}
+```

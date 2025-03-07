@@ -1,0 +1,67 @@
+```python
+import pytest
+from unittest.mock import patch, MagicMock
+
+# Mocking the components
+@patch('module_name.component_b')
+def test_integration(mock_component_b):
+    # Scenario 1: Valid input → all components succeed → assert final output
+    # Arrange
+    mock_component_b.return_value = 200  # Assuming component_b returns 200 when it receives 20
+    expected_output_success = 200
+
+    # Act
+    result_success = component_a(10, 10)
+    final_result_success = component_b(result_success)
+
+    # Assert
+    mock_component_b.assert_called_once_with(20)
+    assert final_result_success == expected_output_success
+
+    # Scenario 2: ComponentB fails → assert ComponentA handles the error (e.g., retries, logs, rollbacks)
+    # Arrange
+    mock_component_b.reset_mock()
+    mock_component_b.side_effect = Exception("Component B failed")
+    expected_error_message = "Component B failed"
+
+    # Act & Assert
+    result_failure = component_a(10, 10)
+    with pytest.raises(Exception) as excinfo:
+        component_b(result_failure)
+
+    assert str(excinfo.value) == expected_error_message
+
+    # Scenario 3: Invalid input to ComponentA → assert error cascades to downstream components
+    # Arrange
+    mock_component_b.reset_mock()
+    expected_error_message_invalid_input = "Invalid input"
+
+    # Act & Assert
+    with pytest.raises(ValueError) as excinfo_invalid_input:
+        component_a(None, 10)  # Assuming component_a raises ValueError for invalid input
+
+    assert str(excinfo_invalid_input.value) == expected_error_message_invalid_input
+
+    # Edge Case: Test boundary conditions (e.g., max/min values, empty inputs)
+    # Arrange
+    mock_component_b.reset_mock()
+    mock_component_b.return_value = 0  # Assuming component_b returns 0 when it receives 0
+    expected_output_edge_case = 0
+
+    # Act
+    result_edge_case = component_a(0, 0)
+    final_result_edge_case = component_b(result_edge_case)
+
+    # Assert
+    mock_component_b.assert_called_once_with(0)
+    assert final_result_edge_case == expected_output_edge_case
+
+# Placeholder for component_a and component_b
+def component_a(num1, num2):
+    if num1 is None or num2 is None:
+        raise ValueError("Invalid input")
+    return num1 + num2
+
+def component_b(result_from_a, constant=10):
+    return result_from_a * constant
+```

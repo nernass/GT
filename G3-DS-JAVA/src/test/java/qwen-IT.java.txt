@@ -1,0 +1,68 @@
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.springframework.jdbc.core.JdbcTemplate;
+
+import javax.sql.DataSource;
+import java.util.HashMap;
+import java.util.Map;
+
+class IntegrationTest {
+
+    private ComponentA componentA;
+    private ComponentB componentB;
+    private JdbcTemplate jdbcTemplate;
+    private DataSource dataSource;
+
+    @BeforeEach
+    void setUp() {
+        dataSource = mock(DataSource.class);
+        jdbcTemplate = new JdbcTemplate(dataSource);
+        componentA = new ComponentA(dataSource);
+        componentB = new ComponentB(dataSource);
+
+        // Mock the jdbcTemplate behavior
+        when(jdbcTemplate.queryForMap(anyString(), anyObject())).thenReturn(createMockUser());
+    }
+
+    @Test
+    void testIntegrationComponentAAndComponentB() {
+        // Insert a user using ComponentA
+        componentA.insertUser("John Doe", "john.doe@example.com");
+
+        // Retrieve the user using ComponentB
+        Map<String, Object> user = componentB.getUserByEmail("john.doe@example.com");
+
+        // Validate the retrieved user data
+        assertEquals("John Doe", user.get("name"));
+        assertEquals("john.doe@example.com", user.get("email"));
+    }
+
+    @Test
+    void testErrorHandlingComponentA() {
+        // Placeholder for error handling test cases in Component A
+    }
+
+    @Test
+    void testErrorHandlingComponentB() {
+        // Mock a scenario where no user is found
+        when(jdbcTemplate.queryForMap(anyString(), anyObject())).thenThrow(new RuntimeException("User not found"));
+
+        // Attempt to retrieve a non-existent user
+        Exception exception = assertThrows(RuntimeException.class, () -> {
+            componentB.getUserByEmail("nonexistent@example.com");
+        });
+
+        // Validate the exception message
+        assertEquals("User not found", exception.getMessage());
+    }
+
+    private Map<String, Object> createMockUser() {
+        Map<String, Object> user = new HashMap<>();
+        user.put("name", "John Doe");
+        user.put("email", "john.doe@example.com");
+        return user;
+    }
+}

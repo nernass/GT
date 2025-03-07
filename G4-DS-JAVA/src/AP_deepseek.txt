@@ -1,0 +1,53 @@
+```java
+import static org.junit.jupiter.api.Assertions.*;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.datasource.embedded.EmbeddedDatabaseBuilder;
+import org.springframework.jdbc.datasource.embedded.EmbeddedDatabaseType;
+import javax.sql.DataSource;
+import java.util.Map;
+
+class ComponentIntegrationTest {
+    private ComponentA componentA;
+    private ComponentB componentB;
+    private JdbcTemplate jdbcTemplate;
+
+    @BeforeEach
+    void setup() {
+        DataSource dataSource = new EmbeddedDatabaseBuilder()
+            .setType(EmbeddedDatabaseType.H2)
+            .addScript("CREATE TABLE users (id INT PRIMARY KEY, name VARCHAR(255), email VARCHAR(255))")
+            .build();
+        
+        componentA = new ComponentA(dataSource);
+        componentB = new ComponentB(dataSource);
+        jdbcTemplate = new JdbcTemplate(dataSource);
+        
+        // Pre-insert test user
+        jdbcTemplate.update("INSERT INTO users (id, name, email) VALUES (?, ?, ?)", 1, "Alice", "alice@example.com");
+    }
+
+    @Test
+    void successFlow_UpdateAndRetrieveUser() {
+        componentA.updateUserEmail(1, "alice_new@example.com");
+        Map<String, Object> user = componentB.getUserById(1);
+        
+        assertEquals("alice_new@example.com", user.get("EMAIL"));
+    }
+
+    @Test
+    void partialFailure_InvalidUserUpdate() {
+        componentA.updateUserEmail(999, "invalid@example.com"); // No user with ID 999
+        
+        assertThrows(org.springframework.dao.EmptyResultDataAccessException.class,
+            () -> componentB.getUserById(999));
+    }
+
+    @Test
+    void edgeCase_EmptyEmailUpdate() {
+        assertThrows(org.springframework.jdbc.BadSqlGrammarException.class,
+            () -> componentA.updateUserEmail(1, null)); // Assumes email column has NOT NULL constraint
+    }
+}
+```

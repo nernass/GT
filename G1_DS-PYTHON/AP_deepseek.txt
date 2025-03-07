@@ -1,0 +1,24 @@
+import pytest
+from component_a import component_a
+from component_b import component_b
+
+class TestComponentIntegration:
+    def test_success_flow_valid_input(self):
+        result_a = component_a(5, 3)
+        result_b = component_b(result_a)
+        assert result_b == 80  # (5+3)*10
+
+    def test_component_a_failure_propagates(self):
+        with pytest.raises(TypeError):
+            invalid_result = component_a("invalid", 5)
+            component_b(invalid_result)
+
+    def test_edge_case_zero_values(self):
+        result_a = component_a(0, 0)
+        result_b = component_b(result_a, constant=5)
+        assert result_b == 0  # (0+0)*5
+
+    def test_large_numbers_handling(self):
+        result_a = component_a(1e6, 2e6)
+        result_b = component_b(result_a)
+        assert result_b == 3e7  # (3e6)*10

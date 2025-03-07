@@ -1,0 +1,29 @@
+```python
+import pytest
+from component_a import component_a
+from component_b import component_b
+
+def test_interaction():
+    num1 = 4
+    num2 = 6
+    result_a = component_a(num1, num2)
+    result_b = component_b(result_a)
+    expected = (num1 + num2) * 10
+    assert result_b == expected
+
+def test_data_flow():
+    num1 = 8
+    num2 = 2
+    result_a = component_a(num1, num2)
+    result_b = component_b(result_a, constant=5)
+    expected = (num1 + num2) * 5
+    assert result_b == expected
+
+def test_error_handling_component_a():
+    with pytest.raises(TypeError):
+        component_a(10, "invalid")
+
+def test_error_handling_component_b():
+    with pytest.raises(TypeError):
+        component_b({"unexpected": "data"})
+```

@@ -1,0 +1,86 @@
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
+
+import javax.sql.DataSource;
+import java.util.Map;
+
+// Placeholders for required setup (e.g., DataSource configuration, mocking)
+public class IntegrationTest {
+
+    private ComponentA componentA;
+    private ComponentB componentB;
+    private DataSource dataSource;
+
+    @BeforeEach
+    public void setUp() {
+        // Placeholder for DataSource setup
+        // e.g., dataSource = createDataSource();
+
+        componentA = new ComponentA(dataSource);
+        componentB = new ComponentB(dataSource);
+    }
+
+    @Test
+    public void testIntegration_UpdateAndRetrieveUser() {
+        // Validate normal interaction and data flow
+        int userId = 1;
+        String originalEmail = "original@example.com";
+        String newEmail = "updated@example.com";
+
+        // Placeholder for inserting a user into the database
+        // e.g., insertUser(userId, "Test User", originalEmail);
+
+        // Update the user's email using ComponentA
+        componentA.updateUserEmail(userId, newEmail);
+
+        // Retrieve the user using ComponentB
+        Map<String, Object> userData = componentB.getUserById(userId);
+
+        // Verify that the email has been updated
+        assertNotNull(userData);
+        assertEquals(userId, userData.get("id"));
+        assertEquals(newEmail, userData.get("email"));
+    }
+
+    @Test
+    public void testErrorHandling_UpdateNonexistentUser() {
+        // Test error handling when updating a non-existent user
+        int nonexistentUserId = 9999;
+        String newEmail = "updated@example.com";
+
+        assertThrows(Exception.class, () -> {
+            componentA.updateUserEmail(nonexistentUserId, newEmail);
+        });
+    }
+
+    @Test
+    public void testErrorHandling_RetrieveNonexistentUser() {
+        // Test error handling when retrieving a non-existent user
+        int nonexistentUserId = 9999;
+
+        assertThrows(Exception.class, () -> {
+            componentB.getUserById(nonexistentUserId);
+        });
+    }
+
+    @Test
+    public void testErrorHandling_UpdateUserEmail_NullValues() {
+        // Test error handling for null inputs in updateUserEmail
+        int userId = 1;
+
+        assertThrows(IllegalArgumentException.class, () -> {
+            componentA.updateUserEmail(userId, null);
+        });
+    }
+
+    @Test
+    public void testErrorHandling_GetUserById_InvalidId() {
+        // Test error handling for invalid user IDs
+        int invalidUserId = -1;
+
+        assertThrows(IllegalArgumentException.class, () -> {
+            componentB.getUserById(invalidUserId);
+        });
+    }
+}

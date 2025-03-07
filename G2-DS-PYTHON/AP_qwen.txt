@@ -1,0 +1,30 @@
+```python
+import pytest
+from unittest.mock import patch
+from component_a import subtract_numbers
+from component_b import divide_by_constant
+
+@patch('component_b.divide_by_constant')
+def test_integration_success(mock_divide_by_constant):
+    mock_divide_by_constant.return_value = 4.0
+    result_a = subtract_numbers(20, 10)
+    result_b = divide_by_constant(result_a)
+    assert result_b == 4.0
+    mock_divide_by_constant.assert_called_once_with(10)
+
+@patch('component_b.divide_by_constant')
+def test_integration_failure(mock_divide_by_constant):
+    mock_divide_by_constant.side_effect = ValueError("Constant cannot be zero.")
+    result_a = subtract_numbers(20, 10)
+    with pytest.raises(ValueError) as excinfo:
+        divide_by_constant(result_a, 0)
+    assert str(excinfo.value) == "Constant cannot be zero."
+
+@patch('component_b.divide_by_constant')
+def test_integration_edge_case(mock_divide_by_constant):
+    mock_divide_by_constant.return_value = 0.0
+    result_a = subtract_numbers(0, 0)
+    result_b = divide_by_constant(result_a)
+    assert result_b == 0.0
+    mock_divide_by_constant.assert_called_once_with(0)
+```

@@ -1,0 +1,27 @@
+```python
+import pytest
+from component_a import component_a
+from component_b import component_b
+
+def test_valid_integration():
+    # Test valid inputs flow through components A and B
+    a_result = component_a(3, 5)
+    b_result = component_b(a_result)
+    assert b_result == 80  # (3 + 5) * 10 = 80
+
+def test_integration_with_negative_numbers():
+    # Test handling of negative numbers
+    a_result = component_a(-2, 7)
+    b_result = component_b(a_result)
+    assert b_result == 50  # (-2 + 7) * 10 = 50
+
+def test_integration_invalid_input_a():
+    # Test invalid input in Component A propagates correctly
+    with pytest.raises(TypeError):
+        component_a("invalid", 5)
+
+def test_integration_invalid_input_b():
+    # Test invalid input in Component B (e.g., non-numeric result from A)
+    with pytest.raises(TypeError):
+        component_b("invalid_input")
+```

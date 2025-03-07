@@ -1,0 +1,45 @@
+// IntegrationTest.java
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import javax.sql.DataSource;
+import java.util.Map;
+import static org.junit.jupiter.api.Assertions.*;
+
+public class IntegrationTest {
+
+    private DataSource dataSource;
+    private ComponentA componentA;
+    private ComponentB componentB;
+
+    @BeforeEach
+    public void setUp() {
+        // Set up the database and components
+        dataSource = DatabaseConfig.dataSource();
+        DatabaseConfig.createTable(dataSource);
+
+        // Insert a test user into the database
+        String sql = "INSERT INTO users (id, name, email) VALUES (?, ?, ?)";
+        new org.springframework.jdbc.core.JdbcTemplate(dataSource).update(sql, 1, "John Doe", "john.doe@example.com");
+
+        // Initialize components
+        componentA = new ComponentA(dataSource);
+        componentB = new ComponentB(dataSource);
+    }
+
+    @Test
+    public void testIntegration() {
+        // Test data
+        int userId = 1;
+        String newEmail = "john.doe.new@example.com";
+
+        // Step 1: Update the user's email using Component A
+        componentA.updateUserEmail(userId, newEmail);
+
+        // Step 2: Retrieve the user using Component B
+        Map<String, Object> user = componentB.getUserById(userId);
+
+        // Verify the updated email
+        assertNotNull(user, "User should not be null");
+        assertEquals(newEmail, user.get("email"), "Email should be updated");
+    }
+}

@@ -1,0 +1,40 @@
+import pytest
+
+# Placeholder for actual imports
+# from component_a import subtract_numbers
+# from component_b import divide_by_constant
+
+def test_integration_component_a_and_component_b():
+    # Test with positive numbers
+    result_a = subtract_numbers(10, 5)
+    assert divide_by_constant(result_a) == 1.0
+
+    # Test with zero in num1
+    result_a = subtract_numbers(0, 5)
+    assert divide_by_constant(result_a) == -1.0
+
+    # Test with zero in num2
+    result_a = subtract_numbers(10, 0)
+    assert divide_by_constant(result_a) == 2.0
+
+    # Test with negative numbers
+    result_a = subtract_numbers(-10, -5)
+    assert divide_by_constant(result_a) == -1.0
+
+    # Test with mixed positive and negative numbers
+    result_a = subtract_numbers(-10, 5)
+    assert divide_by_constant(result_a) == -3.0
+
+    # Test with large numbers
+    result_a = subtract_numbers(1000000, 500000)
+    assert divide_by_constant(result_a) == 100000.0
+
+def test_error_handling_component_a():
+    # Placeholder for error handling test cases in Component A
+    pass
+
+def test_error_handling_component_b():
+    # Test division by zero
+    with pytest.raises(ValueError) as excinfo:
+        divide_by_constant(10, 0)
+    assert str(excinfo.value) == "Constant cannot be zero."
