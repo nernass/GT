@@ -1,0 +1,57 @@
+```java
+import static org.junit.jupiter.api.Assertions.*;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
+import java.io.IOException;
+import java.nio.file.*;
+import java.util.List;
+
+public class IntegrationTest {
+
+    private ComponentA componentA;
+    private ComponentB componentB;
+    private final String secretKey = "1234567890123456";
+
+    @BeforeEach
+    public void setUp() {
+        componentA = new ComponentA();
+        componentB = new ComponentB();
+    }
+
+    @Test
+    public void testEncryptionAndDecryption(@TempDir Path tempDir) throws Exception {
+        Path originalFile = tempDir.resolve("original.txt");
+        Path encryptedFile = tempDir.resolve("encrypted.dat");
+        Path decryptedFile = tempDir.resolve("decrypted.txt");
+
+        Files.write(originalFile, List.of("Test content for encryption"));
+
+        componentA.encryptFile(originalFile.toString(), encryptedFile.toString(), secretKey);
+        componentB.decryptFile(encryptedFile.toString(), decryptedFile.toString(), secretKey);
+
+        boolean isVerified = componentB.verifyDecryption(originalFile.toString(), decryptedFile.toString());
+        assertTrue(isVerified);
+    }
+
+    @Test
+    public void testEncryptionErrorHandling(@TempDir Path tempDir) {
+        Path nonExistentFile = tempDir.resolve("nonexistent.txt");
+        Path encryptedFile = tempDir.resolve("encrypted.dat");
+
+        assertThrows(IOException.class, () -> {
+            componentA.encryptFile(nonExistentFile.toString(), encryptedFile.toString(), secretKey);
+        });
+    }
+
+    @Test
+    public void testDecryptionErrorHandling(@TempDir Path tempDir) {
+        Path nonExistentFile = tempDir.resolve("nonexistent.dat");
+        Path decryptedFile = tempDir.resolve("decrypted.txt");
+
+        assertThrows(IOException.class, () -> {
+            componentB.decryptFile(nonExistentFile.toString(), decryptedFile.toString(), secretKey);
+        });
+    }
+}
+```

@@ -1,0 +1,63 @@
+import static org.junit.jupiter.api.Assertions.*;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+
+class ComponentIntegrationTest {
+
+    @TempDir
+    Path tempDir;
+
+    @Test
+    void successFlow_BackupRestoreAndVerify() throws IOException {
+        // Setup source directory with test files
+        Path sourceDir = tempDir.resolve("source");
+        Files.createDirectory(sourceDir);
+        Files.write(sourceDir.resolve("file1.txt"), "data".getBytes());
+        Files.write(sourceDir.resolve("file2.txt"), "data".getBytes());
+
+        Path backupDir = tempDir.resolve("backup");
+        Path restoreDir = tempDir.resolve("restore");
+
+        // Execute ComponentA backup
+        ComponentA componentA = new ComponentA();
+        componentA.backupDirectory(sourceDir.toString(), backupDir.toString());
+
+        // Execute ComponentB restore and verification
+        ComponentB componentB = new ComponentB();
+        componentB.restoreBackup(backupDir.toString(), restoreDir.toString());
+        boolean verificationResult = componentB.verifyRestore(sourceDir.toString(), restoreDir.toString());
+
+        assertTrue(verificationResult);
+    }
+
+    @Test
+    void partialFailure_InvalidBackupDirectory() {
+        ComponentA componentA = new ComponentA();
+        ComponentB componentB = new ComponentB();
+
+        assertThrows(IOException.class, () -> 
+            componentB.restoreBackup("invalid/path", tempDir.resolve("restore").toString())
+        );
+    }
+
+    @Test
+    void edgeCase_EmptyDirectoryHandling() throws IOException {
+        Path emptySourceDir = tempDir.resolve("empty_source");
+        Files.createDirectory(emptySourceDir);
+        
+        Path backupDir = tempDir.resolve("empty_backup");
+        Path restoreDir = tempDir.resolve("empty_restore");
+
+        ComponentA componentA = new ComponentA();
+        componentA.backupDirectory(emptySourceDir.toString(), backupDir.toString());
+
+        ComponentB componentB = new ComponentB();
+        componentB.restoreBackup(backupDir.toString(), restoreDir.toString());
+        boolean verificationResult = componentB.verifyRestore(emptySourceDir.toString(), restoreDir.toString());
+
+        assertTrue(verificationResult);
+    }
+}

@@ -1,0 +1,132 @@
+```java
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
+
+import javax.crypto.Cipher;
+import javax.crypto.CipherInputStream;
+import javax.crypto.CipherOutputStream;
+import javax.crypto.NoSuchPaddingException;
+import javax.crypto.SecretKey;
+import javax.crypto.spec.SecretKeySpec;
+import java.io.*;
+import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
+
+class IntegrationTest {
+
+    @Mock
+    private Cipher mockCipher;
+
+    @InjectMocks
+    private ComponentA componentA;
+
+    @InjectMocks
+    private ComponentB componentB;
+
+    @BeforeEach
+    void setUp() throws NoSuchAlgorithmException, NoSuchPaddingException {
+        MockitoAnnotations.openMocks(this);
+        when(mockCipher.getInstance(anyString())).thenReturn(mockCipher);
+    }
+
+    @Test
+    void testIntegrationSuccess() throws IOException, NoSuchAlgorithmException, NoSuchPaddingException, InvalidKeyException {
+        // Arrange
+        String inputFile = "test_input.txt";
+        String encryptedFile = "test_encrypted.txt";
+        String decryptedFile = "test_decrypted.txt";
+        String secretKey = "1234567890123456"; // 16 bytes for AES
+
+        // Create test input file
+        try (FileWriter writer = new FileWriter(inputFile)) {
+            writer.write("Hello, World!");
+        }
+
+        // Mock cipher behavior for encryption
+        SecretKey key = new SecretKeySpec(secretKey.getBytes(), "AES");
+        when(mockCipher.init(eq(Cipher.ENCRYPT_MODE), eq(key))).thenReturn(mockCipher);
+        when(mockCipher.init(eq(Cipher.DECRYPT_MODE), eq(key))).thenReturn(mockCipher);
+
+        // Act
+        componentA.encryptFile(inputFile, encryptedFile, secretKey);
+        componentB.decryptFile(encryptedFile, decryptedFile, secretKey);
+        boolean isVerified = componentB.verifyDecryption(inputFile, decryptedFile);
+
+        // Assert
+        assertTrue(isVerified);
+        verify(mockCipher).init(eq(Cipher.ENCRYPT_MODE), eq(key));
+        verify(mockCipher).init(eq(Cipher.DECRYPT_MODE), eq(key));
+    }
+
+    @Test
+    void testIntegrationFailure() throws IOException, NoSuchAlgorithmException, NoSuchPaddingException, InvalidKeyException {
+        // Arrange
+        String inputFile = "test_input.txt";
+        String encryptedFile = "test_encrypted.txt";
+        String decryptedFile = "test_decrypted.txt";
+        String secretKey = "1234567890123456"; // 16 bytes for AES
+
+        // Create test input file
+        try (FileWriter writer = new FileWriter(inputFile)) {
+            writer.write("Hello, World!");
+        }
+
+        // Mock cipher behavior for encryption to throw an exception
+        SecretKey key = new SecretKeySpec(secretKey.getBytes(), "AES");
+        when(mockCipher.init(eq(Cipher.ENCRYPT_MODE), eq(key))).thenThrow(new InvalidKeyException("Invalid key"));
+        when(mockCipher.init(eq(Cipher.DECRYPT_MODE), eq(key))).thenThrow(new InvalidKeyException("Invalid key"));
+
+        // Act & Assert
+        Exception encryptException = assertThrows(InvalidKeyException.class, () -> {
+            componentA.encryptFile(inputFile, encryptedFile, secretKey);
+        });
+        assertEquals("Invalid key", encryptException.getMessage());
+
+        Exception decryptException = assertThrows(InvalidKeyException.class, () -> {
+            componentB.decryptFile(encryptedFile, decryptedFile, secretKey);
+        });
+        assertEquals("Invalid key", decryptException.getMessage());
+
+        boolean isVerified = componentB.verifyDecryption(inputFile, decryptedFile);
+        assertFalse(isVerified);
+        verify(mockCipher).init(eq(Cipher.ENCRYPT_MODE), eq(key));
+        verify(mockCipher).init(eq(Cipher.DECRYPT_MODE), eq(key));
+    }
+
+    @Test
+    void testIntegrationEdgeCase() throws IOException, NoSuchAlgorithmException, NoSuchPaddingException, InvalidKeyException {
+        // Arrange
+        String inputFile = "test_input.txt";
+        String encryptedFile = "test_encrypted.txt";
+        String decryptedFile = "test_decrypted.txt";
+        String secretKey = "1234567890123456"; // 16 bytes for AES
+
+        // Create empty test input file
+        try (FileWriter writer = new FileWriter(inputFile)) {
+            writer.write("");
+        }
+
+        // Mock cipher behavior for encryption
+        SecretKey key = new SecretKeySpec(secretKey.getBytes(), "AES");
+        when(mockCipher.init(eq(Cipher.ENCRYPT_MODE), eq(key))).thenReturn(mockCipher);
+        when(mockCipher.init(eq(Cipher.DECRYPT_MODE), eq(key))).thenReturn(mockCipher);
+
+        // Act
+        componentA.encryptFile(inputFile, encryptedFile, secretKey);
+        componentB.decryptFile(encryptedFile, decryptedFile, secretKey);
+        boolean isVerified = componentB.verifyDecryption(inputFile, decryptedFile);
+
+        // Assert
+        assertTrue(isVerified);
+        verify(mockCipher).init(eq(Cipher.ENCRYPT_MODE), eq(key));
+        verify(mockCipher).init(eq(Cipher.DECRYPT_MODE), eq(key));
+    }
+}
+```
+

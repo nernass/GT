@@ -1,0 +1,79 @@
+import static org.junit.jupiter.api.Assertions.*;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.security.InvalidKeyException;
+import javax.crypto.NoSuchPaddingException;
+
+class ComponentIntegrationTest {
+
+    @TempDir
+    Path tempDir;
+
+    @Test
+    void successFlow_EncryptDecryptVerify() throws Exception {
+        Path sourceFile = tempDir.resolve("test.txt");
+        Files.writeString(sourceFile, "IntegrationTestData");
+        
+        ComponentA componentA = new ComponentA();
+        ComponentB componentB = new ComponentB();
+        
+        String key = "16ByteAESKey12345";
+        Path encryptedFile = tempDir.resolve("encrypted.bin");
+        Path decryptedFile = tempDir.resolve("decrypted.txt");
+        
+        componentA.encryptFile(sourceFile.toString(), encryptedFile.toString(), key);
+        componentB.decryptFile(encryptedFile.toString(), decryptedFile.toString(), key);
+        
+        assertTrue(componentB.verifyDecryption(sourceFile.toString(), decryptedFile.toString()));
+    }
+
+    @Test
+    void invalidDecryptionKey_FailsVerification() throws Exception {
+        Path sourceFile = tempDir.resolve("test.txt");
+        Files.writeString(sourceFile, "Data");
+        
+        ComponentA componentA = new ComponentA();
+        ComponentB componentB = new ComponentB();
+        
+        String validKey = "Valid16ByteKey!!!";
+        String invalidKey = "Invalid16ByteKey??";
+        Path encryptedFile = tempDir.resolve("encrypted.bin");
+        Path decryptedFile = tempDir.resolve("decrypted.txt");
+        
+        componentA.encryptFile(sourceFile.toString(), encryptedFile.toString(), validKey);
+        componentB.decryptFile(encryptedFile.toString(), decryptedFile.toString(), invalidKey);
+        
+        assertFalse(componentB.verifyDecryption(sourceFile.toString(), decryptedFile.toString()));
+    }
+
+    @Test
+    void invalidKeyLength_ThrowsException() {
+        ComponentA componentA = new ComponentA();
+        Path sourceFile = tempDir.resolve("test.txt");
+        Path encryptedFile = tempDir.resolve("encrypted.bin");
+        
+        assertThrows(InvalidKeyException.class, () -> 
+            componentA.encryptFile(sourceFile.toString(), encryptedFile.toString(), "short")
+        );
+    }
+
+    @Test
+    void emptyFile_HandledCorrectly() throws Exception {
+        Path emptyFile = tempDir.resolve("empty.txt");
+        Files.createFile(emptyFile);
+        
+        ComponentA componentA = new ComponentA();
+        ComponentB componentB = new ComponentB();
+        
+        String key = "16ByteKeyForEmptyFile";
+        Path encryptedFile = tempDir.resolve("empty_enc.bin");
+        Path decryptedFile = tempDir.resolve("empty_dec.txt");
+        
+        componentA.encryptFile(emptyFile.toString(), encryptedFile.toString(), key);
+        componentB.decryptFile(encryptedFile.toString(), decryptedFile.toString(), key);
+        
+        assertTrue(componentB.verifyDecryption(emptyFile.toString(), decryptedFile.toString()));
+    }
+}

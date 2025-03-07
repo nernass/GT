@@ -1,0 +1,96 @@
+
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
+
+import javax.crypto.Cipher;
+import javax.crypto.CipherInputStream;
+import javax.crypto.CipherOutputStream;
+import javax.crypto.NoSuchPaddingException;
+import javax.crypto.SecretKey;
+import javax.crypto.spec.SecretKeySpec;
+import java.io.*;
+import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
+
+class IntegrationTest {
+
+    private ComponentA componentA;
+    private ComponentB componentB;
+
+    @Mock
+    private Cipher mockCipher;
+
+    @BeforeEach
+    void setUp() throws NoSuchAlgorithmException, NoSuchPaddingException {
+        MockitoAnnotations.openMocks(this);
+        componentA = new ComponentA();
+        componentB = new ComponentB();
+
+        // Mock the Cipher instance
+        when(mockCipher.getInstance(anyString())).thenReturn(mockCipher);
+    }
+
+    @Test
+    void testIntegrationComponentAAndComponentB() throws IOException, NoSuchAlgorithmException, NoSuchPaddingException, InvalidKeyException {
+        String secretKey = "1Hbfh667adfDEJ78";
+        String originalFilePath = "src/test/resources/original.txt";
+        String encryptedFilePath = "src/test/resources/encrypted.enc";
+        String decryptedFilePath = "src/test/resources/decrypted.txt";
+
+        // Encrypt the file using ComponentA
+        componentA.encryptFile(originalFilePath, encryptedFilePath, secretKey);
+
+        // Decrypt the file using ComponentB
+        componentB.decryptFile(encryptedFilePath, decryptedFilePath, secretKey);
+
+        // Verify the decryption using ComponentB
+        boolean isVerified = componentB.verifyDecryption(originalFilePath, decryptedFilePath);
+
+        // Validate that the decryption is verified
+        assertTrue(isVerified);
+    }
+
+    @Test
+    void testErrorHandlingComponentA() throws IOException, NoSuchAlgorithmException, NoSuchPaddingException, InvalidKeyException {
+        String secretKey = "1Hbfh667adfDEJ78";
+        String originalFilePath = "src/test/resources/nonexistent.txt";
+        String encryptedFilePath = "src/test/resources/encrypted.enc";
+
+        Exception exception = assertThrows(FileNotFoundException.class, () -> {
+            componentA.encryptFile(originalFilePath, encryptedFilePath, secretKey);
+        });
+
+        // Validate the exception message
+        assertEquals("src/test/resources/nonexistent.txt (The system cannot find the file specified)", exception.getMessage());
+    }
+
+    @Test
+    void testErrorHandlingComponentB() throws IOException, NoSuchAlgorithmException, NoSuchPaddingException, InvalidKeyException {
+        String secretKey = "1Hbfh667adfDEJ78";
+        String encryptedFilePath = "src/test/resources/nonexistent.enc";
+        String decryptedFilePath = "src/test/resources/decrypted.txt";
+
+        Exception exception = assertThrows(FileNotFoundException.class, () -> {
+            componentB.decryptFile(encryptedFilePath, decryptedFilePath, secretKey);
+        });
+
+        // Validate the exception message
+        assertEquals("src/test/resources/nonexistent.enc (The system cannot find the file specified)", exception.getMessage());
+
+        // Mock a scenario where an error occurs during decryption
+        String validEncryptedFilePath = "src/test/resources/encrypted.enc";
+        when(mockCipher.init(anyInt(), any(SecretKey.class))).thenThrow(new InvalidKeyException("Invalid key"));
+
+        Exception decryptException = assertThrows(InvalidKeyException.class, () -> {
+            componentB.decryptFile(validEncryptedFilePath, decryptedFilePath, secretKey);
+        });
+
+        // Validate the exception message
+        assertEquals("Invalid key", decryptException.getMessage());
+    }
+}

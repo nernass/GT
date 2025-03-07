@@ -1,0 +1,137 @@
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
+
+import javax.crypto.NoSuchPaddingException;
+import java.io.*;
+import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
+
+public class IntegrationTest {
+
+    private ComponentA componentA;
+    private ComponentB componentB;
+    private String secretKey;
+
+    @BeforeEach
+    public void setUp() {
+        // Placeholder for required setup
+        componentA = new ComponentA();
+        componentB = new ComponentB();
+        secretKey = "1234567890123456"; // 16-byte key for AES
+
+        // Placeholders for creating test files
+        // e.g., createTestFiles();
+    }
+
+    @Test
+    public void testIntegration_EncryptAndDecrypt() throws IOException, NoSuchAlgorithmException, NoSuchPaddingException, InvalidKeyException {
+        String inputFile = "path/to/inputFile.txt";
+        String encryptedFile = "path/to/encryptedFile.enc";
+        String decryptedFile = "path/to/decryptedFile.txt";
+
+        // Placeholder for creating input file
+        // e.g., createInputFile(inputFile);
+
+        // Encrypt the file using ComponentA
+        componentA.encryptFile(inputFile, encryptedFile, secretKey);
+
+        // Decrypt the file using ComponentB
+        componentB.decryptFile(encryptedFile, decryptedFile, secretKey);
+
+        // Verify that the decrypted file matches the original
+        boolean isVerified = componentB.verifyDecryption(inputFile, decryptedFile);
+        assertTrue(isVerified);
+    }
+
+    @Test
+    public void testErrorHandling_InvalidSecretKey() throws IOException, NoSuchAlgorithmException, NoSuchPaddingException {
+        String inputFile = "path/to/inputFile.txt";
+        String encryptedFile = "path/to/encryptedFile.enc";
+        String decryptedFile = "path/to/decryptedFile.txt";
+        String invalidSecretKey = "invalidKey123456"; // Invalid key length
+
+        // Placeholder for creating input file
+        // e.g., createInputFile(inputFile);
+
+        // Encrypt the file using ComponentA
+        componentA.encryptFile(inputFile, encryptedFile, secretKey);
+
+        // Attempt to decrypt with an invalid secret key
+        assertThrows(InvalidKeyException.class, () -> {
+            componentB.decryptFile(encryptedFile, decryptedFile, invalidSecretKey);
+        });
+    }
+
+    @Test
+    public void testErrorHandling_NonexistentInputFile() {
+        String nonexistentFile = "path/to/nonexistentFile.txt";
+        String encryptedFile = "path/to/encryptedFile.enc";
+
+        // Attempt to encrypt a non-existent file
+        assertThrows(FileNotFoundException.class, () -> {
+            componentA.encryptFile(nonexistentFile, encryptedFile, secretKey);
+        });
+    }
+
+    @Test
+    public void testErrorHandling_CorruptedEncryptedFile() throws IOException, NoSuchAlgorithmException, NoSuchPaddingException, InvalidKeyException {
+        String inputFile = "path/to/inputFile.txt";
+        String encryptedFile = "path/to/encryptedFile.enc";
+        String corruptedFile = "path/to/corruptedFile.enc";
+        String decryptedFile = "path/to/decryptedFile.txt";
+
+        // Placeholder for creating and encrypting input file
+        // e.g., createInputFile(inputFile);
+        componentA.encryptFile(inputFile, encryptedFile, secretKey);
+
+        // Placeholder for corrupting the encrypted file
+        // e.g., corruptFile(encryptedFile, corruptedFile);
+
+        // Attempt to decrypt the corrupted file
+        assertThrows(IOException.class, () -> {
+            componentB.decryptFile(corruptedFile, decryptedFile, secretKey);
+        });
+    }
+
+    @Test
+    public void testEncryptFile_NullParameters() {
+        assertThrows(NullPointerException.class, () -> {
+            componentA.encryptFile(null, "path/to/outputFile.enc", secretKey);
+        });
+
+        assertThrows(NullPointerException.class, () -> {
+            componentA.encryptFile("path/to/inputFile.txt", null, secretKey);
+        });
+
+        assertThrows(NullPointerException.class, () -> {
+            componentA.encryptFile("path/to/inputFile.txt", "path/to/outputFile.enc", null);
+        });
+    }
+
+    @Test
+    public void testDecryptFile_NullParameters() {
+        assertThrows(NullPointerException.class, () -> {
+            componentB.decryptFile(null, "path/to/outputFile.txt", secretKey);
+        });
+
+        assertThrows(NullPointerException.class, () -> {
+            componentB.decryptFile("path/to/inputFile.enc", null, secretKey);
+        });
+
+        assertThrows(NullPointerException.class, () -> {
+            componentB.decryptFile("path/to/inputFile.enc", "path/to/outputFile.txt", null);
+        });
+    }
+
+    @Test
+    public void testVerifyDecryption_NullParameters() throws IOException {
+        assertThrows(NullPointerException.class, () -> {
+            componentB.verifyDecryption(null, "path/to/decryptedFile.txt");
+        });
+
+        assertThrows(NullPointerException.class, () -> {
+            componentB.verifyDecryption("path/to/originalFile.txt", null);
+        });
+    }
+}

@@ -1,0 +1,102 @@
+```java
+import static org.mockito.Mockito.*;
+import static org.junit.jupiter.api.Assertions.*;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
+import org.springframework.jdbc.core.JdbcTemplate;
+
+import javax.sql.DataSource;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+class IntegrationTest {
+
+    @Mock
+    private DataSource dataSource;
+
+    @Mock
+    private JdbcTemplate jdbcTemplate;
+
+    @InjectMocks
+    private ComponentA componentA;
+
+    @InjectMocks
+    private ComponentB componentB;
+
+    @BeforeEach
+    void setUp() {
+        MockitoAnnotations.openMocks(this);
+        when(dataSource.getConnection()).thenReturn(null); // Mock connection
+        when(new JdbcTemplate(dataSource)).thenReturn(jdbcTemplate);
+    }
+
+    @Test
+    void testIntegrationSuccess() {
+        // Arrange
+        String email = "john.doe@example.com";
+        Map<String, Object> user = new HashMap<>();
+        user.put("email", email);
+        List<Map<String, Object>> users = new ArrayList<>();
+        users.add(user);
+
+        when(jdbcTemplate.queryForList(anyString(), anyObject())).thenReturn(users);
+        doNothing().when(jdbcTemplate).update(anyString(), anyObject());
+
+        // Act
+        componentA.deleteUserByEmail(email);
+        List<Map<String, Object>> resultUsers = componentB.getUserByEmail(email);
+
+        // Assert
+        assertTrue(resultUsers.isEmpty());
+        verify(jdbcTemplate).update(anyString(), eq(email));
+        verify(jdbcTemplate).queryForList(anyString(), eq(email));
+    }
+
+    @Test
+    void testIntegrationFailure() {
+        // Arrange
+        String email = "john.doe@example.com";
+        Map<String, Object> user = new HashMap<>();
+        user.put("email", email);
+        List<Map<String, Object>> users = new ArrayList<>();
+        users.add(user);
+
+        when(jdbcTemplate.queryForList(anyString(), anyObject())).thenReturn(users);
+        doThrow(new RuntimeException("Database error")).when(jdbcTemplate).update(anyString(), anyObject());
+
+        // Act & Assert
+        Exception exception = assertThrows(RuntimeException.class, () -> {
+            componentA.deleteUserByEmail(email);
+        });
+        assertEquals("Database error", exception.getMessage());
+        List<Map<String, Object>> resultUsers = componentB.getUserByEmail(email);
+        assertFalse(resultUsers.isEmpty());
+        verify(jdbcTemplate).update(anyString(), eq(email));
+        verify(jdbcTemplate).queryForList(anyString(), eq(email));
+    }
+
+    @Test
+    void testIntegrationEdgeCase() {
+        // Arrange
+        String email = "";
+
+        when(jdbcTemplate.queryForList(anyString(), anyObject())).thenReturn(new ArrayList<>());
+        doNothing().when(jdbcTemplate).update(anyString(), anyObject());
+
+        // Act & Assert
+        componentA.deleteUserByEmail(email);
+        List<Map<String, Object>> resultUsers = componentB.getUserByEmail(email);
+
+        // Assert
+        assertTrue(resultUsers.isEmpty());
+        verify(jdbcTemplate).update(anyString(), eq(email));
+        verify(jdbcTemplate).queryForList(anyString(), eq(email));
+    }
+}
+```

@@ -1,0 +1,110 @@
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
+
+import java.io.IOException;
+import java.nio.file.*;
+
+public class IntegrationTest {
+
+    private ComponentA componentA;
+    private ComponentB componentB;
+
+    @BeforeEach
+    public void setUp() {
+        // Placeholders for required setup
+        // e.g., Initialize components, create temporary directories
+
+        componentA = new ComponentA();
+        componentB = new ComponentB();
+
+        // Placeholder for creating temporary directories
+        // e.g., createTempDirectories();
+    }
+
+    @Test
+    public void testIntegration_BackupAndRestore() throws IOException {
+        // Placeholder paths for testing
+        String sourceDir = "path/to/sourceDir";
+        String backupDir = "path/to/backupDir";
+        String restoreDir = "path/to/restoreDir";
+
+        // Use ComponentA to backup the directory
+        componentA.backupDirectory(sourceDir, backupDir);
+
+        // Use ComponentB to restore the backup
+        componentB.restoreBackup(backupDir, restoreDir);
+
+        // Verify that the restored files match the original
+        boolean isVerified = componentB.verifyRestore(sourceDir, restoreDir);
+        assertTrue(isVerified);
+    }
+
+    @Test
+    public void testErrorHandling_BackupNonexistentSource() {
+        String nonexistentSourceDir = "path/to/nonexistentSourceDir";
+        String backupDir = "path/to/backupDir";
+
+        assertThrows(IOException.class, () -> {
+            componentA.backupDirectory(nonexistentSourceDir, backupDir);
+        });
+    }
+
+    @Test
+    public void testErrorHandling_RestoreNonexistentBackup() {
+        String nonexistentBackupDir = "path/to/nonexistentBackupDir";
+        String restoreDir = "path/to/restoreDir";
+
+        assertThrows(IOException.class, () -> {
+            componentB.restoreBackup(nonexistentBackupDir, restoreDir);
+        });
+    }
+
+    @Test
+    public void testErrorHandling_VerifyMismatch() throws IOException {
+        String sourceDir = "path/to/sourceDir";
+        String backupDir = "path/to/backupDir";
+        String restoreDir = "path/to/restoreDir";
+
+        // Backup and restore directories with intentional mismatch
+        componentA.backupDirectory(sourceDir, backupDir);
+        // Modify or omit restore step to cause mismatch
+        // e.g., componentB.restoreBackup(backupDir, restoreDir);
+
+        boolean isVerified = componentB.verifyRestore(sourceDir, restoreDir);
+        assertFalse(isVerified);
+    }
+
+    @Test
+    public void testBackupDirectory_NullPaths() {
+        assertThrows(NullPointerException.class, () -> {
+            componentA.backupDirectory(null, "path/to/backupDir");
+        });
+
+        assertThrows(NullPointerException.class, () -> {
+            componentA.backupDirectory("path/to/sourceDir", null);
+        });
+    }
+
+    @Test
+    public void testRestoreBackup_NullPaths() {
+        assertThrows(NullPointerException.class, () -> {
+            componentB.restoreBackup(null, "path/to/restoreDir");
+        });
+
+        assertThrows(NullPointerException.class, () -> {
+            componentB.restoreBackup("path/to/backupDir", null);
+        });
+    }
+
+    @Test
+    public void testVerifyRestore_NullPaths() {
+        assertThrows(NullPointerException.class, () -> {
+            componentB.verifyRestore(null, "path/to/restoreDir");
+        });
+
+        assertThrows(NullPointerException.class, () -> {
+            componentB.verifyRestore("path/to/sourceDir", null);
+        });
+    }
+}

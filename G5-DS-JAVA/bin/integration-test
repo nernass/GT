@@ -1,0 +1,42 @@
+// IntegrationTest.java
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import javax.sql.DataSource;
+import java.util.List;
+import java.util.Map;
+import static org.junit.jupiter.api.Assertions.*;
+
+public class IntegrationTest {
+
+    private DataSource dataSource;
+    private ComponentA componentA;
+    private ComponentB componentB;
+
+    @BeforeEach
+    public void setUp() {
+        // Set up the database and components
+        dataSource = DatabaseConfig.dataSource();
+        DatabaseConfig.createTable(dataSource);
+        componentA = new ComponentA(dataSource);
+        componentB = new ComponentB(dataSource);
+
+        // Insert a test user into the database
+        String sql = "INSERT INTO users (name, email) VALUES (?, ?)";
+        new org.springframework.jdbc.core.JdbcTemplate(dataSource).update(sql, "John Doe", "john.doe@example.com");
+    }
+
+    @Test
+    public void testIntegration() {
+        // Test data
+        String email = "john.doe@example.com";
+
+        // Step 1: Delete the user using Component A
+        componentA.deleteUserByEmail(email);
+
+        // Step 2: Attempt to fetch the deleted user using Component B
+        List<Map<String, Object>> user = componentB.getUserByEmail(email);
+
+        // Verify the user no longer exists
+        assertTrue(user.isEmpty(), "User should no longer exist in the database");
+    }
+}

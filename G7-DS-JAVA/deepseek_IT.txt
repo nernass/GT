@@ -1,0 +1,64 @@
+```java
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
+import static org.junit.jupiter.api.Assertions.*;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.security.InvalidKeyException;
+
+public class ComponentIntegrationTest {
+
+    @TempDir
+    Path tempDir;
+
+    private ComponentA componentA;
+    private ComponentB componentB;
+    private Path originalFile;
+    private Path encryptedFile;
+    private Path decryptedFile;
+    private String validKey;
+
+    @BeforeEach
+    void setUp() throws Exception {
+        componentA = new ComponentA();
+        componentB = new ComponentB();
+        validKey = "Valid16ByteKey123"; // 16-byte key
+
+        originalFile = tempDir.resolve("original.txt");
+        encryptedFile = tempDir.resolve("encrypted.aes");
+        decryptedFile = tempDir.resolve("decrypted.txt");
+
+        Files.write(originalFile, "Integration test data".getBytes());
+    }
+
+    @Test
+    void encryptAndDecrypt_Success() throws Exception {
+        componentA.encryptFile(originalFile.toString(), encryptedFile.toString(), validKey);
+        componentB.decryptFile(encryptedFile.toString(), decryptedFile.toString(), validKey);
+
+        assertTrue(componentB.verifyDecryption(originalFile.toString(), decryptedFile.toString()));
+    }
+
+    @Test
+    void decryptWithInvalidKeyLength_ThrowsException() {
+        String invalidKey = "ShortKey"; // 8-byte key
+
+        componentA.encryptFile(originalFile.toString(), encryptedFile.toString(), validKey);
+
+        assertThrows(InvalidKeyException.class, () ->
+            componentB.decryptFile(encryptedFile.toString(), decryptedFile.toString(), invalidKey)
+        );
+    }
+
+    @Test
+    void verifyDecryption_FailsWhenTampered() throws Exception {
+        componentA.encryptFile(originalFile.toString(), encryptedFile.toString(), validKey);
+        componentB.decryptFile(encryptedFile.toString(), decryptedFile.toString(), validKey);
+
+        Files.write(decryptedFile, "Tampered content".getBytes());
+
+        assertFalse(componentB.verifyDecryption(originalFile.toString(), decryptedFile.toString()));
+    }
+}
+```

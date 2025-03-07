@@ -1,0 +1,58 @@
+```java
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.datasource.embedded.EmbeddedDatabaseBuilder;
+import org.springframework.jdbc.datasource.embedded.EmbeddedDatabaseType;
+import javax.sql.DataSource;
+import java.util.List;
+import java.util.Map;
+import static org.junit.jupiter.api.Assertions.*;
+
+class ComponentIntegrationTest {
+    
+    private DataSource dataSource;
+    private ComponentA componentA;
+    private ComponentB componentB;
+
+    @BeforeEach
+    void setup() {
+        dataSource = new EmbeddedDatabaseBuilder()
+            .setType(EmbeddedDatabaseType.H2)
+            .addScript("classpath:schema.sql") // Creates users table with NOT NULL email
+            .addScript("classpath:test-data.sql") // Inserts test user: email = test@example.com
+            .build();
+        
+        componentA = new ComponentA(dataSource);
+        componentB = new ComponentB(dataSource);
+    }
+
+    @Test
+    void deleteUserByEmail_ValidEmail_RemovesUser() {
+        // Act
+        componentA.deleteUserByEmail("test@example.com");
+        List<Map<String, Object>> users = componentB.getUserByEmail("test@example.com");
+
+        // Assert
+        assertTrue(users.isEmpty());
+    }
+
+    @Test
+    void deleteNonExistentEmail_NoRowsAffected() {
+        // Act
+        componentA.deleteUserByEmail("invalid@example.com");
+        List<Map<String, Object>> users = componentB.getUserByEmail("test@example.com");
+
+        // Assert
+        assertEquals(1, users.size());
+    }
+
+    @Test
+    void deleteWithNullEmail_ThrowsConstraintViolation() {
+        // Act & Assert
+        assertThrows(org.springframework.dao.DataIntegrityViolationException.class,
+            () -> componentA.deleteUserByEmail(null)
+        );
+    }
+}
+```

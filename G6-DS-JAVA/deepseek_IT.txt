@@ -1,0 +1,71 @@
+```java
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import static org.junit.jupiter.api.Assertions.*;
+
+class ComponentIntegrationTest {
+
+    @TempDir
+    Path tempDir;
+    private Path sourceDir;
+    private Path backupDir;
+    private Path restoreDir;
+    private ComponentA componentA;
+    private ComponentB componentB;
+
+    @BeforeEach
+    void setup() throws IOException {
+        sourceDir = tempDir.resolve("source");
+        backupDir = tempDir.resolve("backup");
+        restoreDir = tempDir.resolve("restore");
+        Files.createDirectories(sourceDir);
+        
+        componentA = new ComponentA();
+        componentB = new ComponentB();
+    }
+
+    @Test
+    void backupAndRestore_ValidFiles_MatchesOriginal() throws IOException {
+        // Create test files in source
+        Files.writeString(sourceDir.resolve("file1.txt"), "content1");
+        Files.writeString(sourceDir.resolve("file2.txt"), "content2");
+
+        // Execute backup and restore
+        componentA.backupDirectory(sourceDir.toString(), backupDir.toString());
+        componentB.restoreBackup(backupDir.toString(), restoreDir.toString());
+        
+        // Verify restore matches source
+        assertTrue(componentB.verifyRestore(sourceDir.toString(), restoreDir.toString()));
+    }
+
+    @Test
+    void backupAndRestore_EmptySource_HandlesCorrectly() throws IOException {
+        // Execute with empty source
+        componentA.backupDirectory(sourceDir.toString(), backupDir.toString());
+        componentB.restoreBackup(backupDir.toString(), restoreDir.toString());
+        
+        // Verify no files restored
+        assertTrue(componentB.verifyRestore(sourceDir.toString(), restoreDir.toString()));
+    }
+
+    @Test
+    void backupInvalidSource_ThrowsIOException() {
+        assertThrows(IOException.class,
+            () -> componentA.backupDirectory("invalid/path", backupDir.toString())
+        );
+    }
+
+    @Test
+    void verifyRestore_FileMismatch_ReturnsFalse() throws IOException {
+        // Create different files in source and restore
+        Files.writeString(sourceDir.resolve("original.txt"), "content");
+        Files.writeString(restoreDir.resolve("different.txt"), "content");
+        
+        assertFalse(componentB.verifyRestore(sourceDir.toString(), restoreDir.toString()));
+    }
+}
+```

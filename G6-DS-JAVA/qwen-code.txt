@@ -1,0 +1,135 @@
+
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
+
+import java.io.IOException;
+import java.nio.file.*;
+import java.util.*;
+
+class IntegrationTest {
+
+    private ComponentA componentA;
+    private ComponentB componentB;
+
+    @Mock
+    private FileSystem fileSystem;
+
+    @BeforeEach
+    void setUp() {
+        MockitoAnnotations.openMocks(this);
+        componentA = new ComponentA();
+        componentB = new ComponentB();
+
+        // Mock the default file system
+        Path sourceDir = Paths.get("/source");
+        Path backupDir = Paths.get("/backup");
+        Path restoreDir = Paths.get("/restore");
+
+        // Create mock directories and files
+        Path sourceFile1 = sourceDir.resolve("file1.txt");
+        Path sourceFile2 = sourceDir.resolve("file2.txt");
+        Path backupFile1 = backupDir.resolve("file1.txt");
+        Path backupFile2 = backupDir.resolve("file2.txt");
+        Path restoreFile1 = restoreDir.resolve("file1.txt");
+        Path restoreFile2 = restoreDir.resolve("file2.txt");
+
+        // Mock file system behavior
+        try {
+            when(fileSystem.getPath("/source")).thenReturn(sourceDir);
+            when(fileSystem.getPath("/backup")).thenReturn(backupDir);
+            when(fileSystem.getPath("/restore")).thenReturn(restoreDir);
+            when(fileSystem.getPath("/source/file1.txt")).thenReturn(sourceFile1);
+            when(fileSystem.getPath("/source/file2.txt")).thenReturn(sourceFile2);
+            when(fileSystem.getPath("/backup/file1.txt")).thenReturn(backupFile1);
+            when(fileSystem.getPath("/backup/file2.txt")).thenReturn(backupFile2);
+            when(fileSystem.getPath("/restore/file1.txt")).thenReturn(restoreFile1);
+            when(fileSystem.getPath("/restore/file2.txt")).thenReturn(restoreFile2);
+
+            when(Files.exists(sourceDir)).thenReturn(true);
+            when(Files.exists(backupDir)).thenReturn(false);
+            when(Files.exists(restoreDir)).thenReturn(false);
+
+            when(Files.newDirectoryStream(sourceDir)).thenReturn(
+                Stream.of(sourceFile1, sourceFile2)::iterator
+            );
+            when(Files.newDirectoryStream(backupDir)).thenReturn(
+                Stream.of(backupFile1, backupFile2)::iterator
+            );
+            when(Files.newDirectoryStream(restoreDir)).thenReturn(
+                Stream.of(restoreFile1, restoreFile2)::iterator
+            );
+
+            when(Files.isRegularFile(sourceFile1)).thenReturn(true);
+            when(Files.isRegularFile(sourceFile2)).thenReturn(true);
+            when(Files.isRegularFile(backupFile1)).thenReturn(true);
+            when(Files.isRegularFile(backupFile2)).thenReturn(true);
+            when(Files.isRegularFile(restoreFile1)).thenReturn(true);
+            when(Files.isRegularFile(restoreFile2)).thenReturn(true);
+
+            doNothing().when(Files.class);
+            Files.createDirectories(any(Path.class));
+
+            doNothing().when(Files.class);
+            Files.copy(any(Path.class), any(Path.class), any(StandardCopyOption.class));
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    @Test
+    void testIntegrationComponentAAndComponentB() throws IOException {
+        // Backup the directory using ComponentA
+        componentA.backupDirectory("/source", "/backup");
+
+        // Restore the backup using ComponentB
+        componentB.restoreBackup("/backup", "/restore");
+
+        // Verify the restore using ComponentB
+        boolean isVerified = componentB.verifyRestore("/source", "/restore");
+
+        // Validate that the restore is verified
+        assertTrue(isVerified);
+    }
+
+    @Test
+    void testErrorHandlingComponentA() {
+        // Placeholder for error handling test cases in Component A
+    }
+
+    @Test
+    void testErrorHandlingComponentB() {
+        // Mock a scenario where an error occurs during backup restoration
+        try {
+            when(Files.copy(any(Path.class), any(Path.class), any(StandardCopyOption.class)))
+                .thenThrow(new IOException("Copy failed"));
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        Exception exception = assertThrows(IOException.class, () -> {
+            componentB.restoreBackup("/backup", "/restore");
+        });
+
+        // Validate the exception message
+        assertEquals("Copy failed", exception.getMessage());
+
+        // Mock a scenario where an error occurs during verification
+        try {
+            when(Files.newDirectoryStream(any(Path.class))).thenThrow(new IOException("Directory stream failed"));
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        Exception verifyException = assertThrows(IOException.class, () -> {
+            componentB.verifyRestore("/source", "/restore");
+        });
+
+        // Validate the exception message
+        assertEquals("Directory stream failed", verifyException.getMessage());
+    }
+}

@@ -1,0 +1,86 @@
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
+
+import javax.sql.DataSource;
+import java.util.List;
+import java.util.Map;
+
+// Placeholders for required setup (e.g., DataSource configuration, mocking)
+public class IntegrationTest {
+
+    private ComponentA componentA;
+    private ComponentB componentB;
+    private DataSource dataSource;
+
+    @BeforeEach
+    public void setUp() {
+        // Placeholder for DataSource setup
+        // e.g., dataSource = createDataSource();
+
+        componentA = new ComponentA(dataSource);
+        componentB = new ComponentB(dataSource);
+
+        // Placeholder for initial data setup
+        // e.g., insert a user into the database for testing
+        // insertUser("Test User", "testuser@example.com");
+    }
+
+    @Test
+    public void testIntegration_DeleteAndRetrieveUser() {
+        String email = "testuser@example.com";
+
+        // Placeholder for inserting a user
+        // insertUser("Test User", email);
+
+        // Delete the user using ComponentA
+        componentA.deleteUserByEmail(email);
+
+        // Attempt to retrieve the user using ComponentB
+        List<Map<String, Object>> users = componentB.getUserByEmail(email);
+
+        // Verify that the user no longer exists
+        assertTrue(users.isEmpty());
+    }
+
+    @Test
+    public void testErrorHandling_DeleteNonexistentUser() {
+        String nonexistentEmail = "nonexistent@example.com";
+
+        // Attempt to delete a non-existent user
+        // Expecting no exception but no users should be affected
+        componentA.deleteUserByEmail(nonexistentEmail);
+
+        // Verify that no users exist with the given email
+        List<Map<String, Object>> users = componentB.getUserByEmail(nonexistentEmail);
+        assertTrue(users.isEmpty());
+    }
+
+    @Test
+    public void testErrorHandling_DeleteUserByEmail_NullEmail() {
+        // Test error handling for null email in deleteUserByEmail
+        assertThrows(IllegalArgumentException.class, () -> {
+            componentA.deleteUserByEmail(null);
+        });
+    }
+
+    @Test
+    public void testErrorHandling_GetUserByEmail_NullEmail() {
+        // Test error handling for null email in getUserByEmail
+        assertThrows(IllegalArgumentException.class, () -> {
+            componentB.getUserByEmail(null);
+        });
+    }
+
+    @Test
+    public void testErrorHandling_GetUserByEmail_EmptyResult() {
+        String email = "nonexistent@example.com";
+
+        // Attempt to retrieve a user that doesn't exist
+        List<Map<String, Object>> users = componentB.getUserByEmail(email);
+
+        // Verify that the result is an empty list
+        assertNotNull(users);
+        assertTrue(users.isEmpty());
+    }
+}

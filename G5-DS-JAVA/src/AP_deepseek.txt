@@ -1,0 +1,48 @@
+import static org.junit.jupiter.api.Assertions.*;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.datasource.embedded.EmbeddedDatabaseBuilder;
+import org.springframework.jdbc.datasource.embedded.EmbeddedDatabaseType;
+import javax.sql.DataSource;
+import java.util.List;
+import java.util.Map;
+
+class ComponentIntegrationTest {
+    private ComponentA componentA;
+    private ComponentB componentB;
+    private JdbcTemplate jdbcTemplate;
+
+    @BeforeEach
+    void setup() {
+        DataSource dataSource = new EmbeddedDatabaseBuilder()
+            .setType(EmbeddedDatabaseType.H2)
+            .addScript("CREATE TABLE users (id INT AUTO_INCREMENT PRIMARY KEY, name VARCHAR(255), email VARCHAR(255))")
+            .build();
+        
+        componentA = new ComponentA(dataSource);
+        componentB = new ComponentB(dataSource);
+        jdbcTemplate = new JdbcTemplate(dataSource);
+        jdbcTemplate.update("INSERT INTO users (name, email) VALUES (?, ?)", "Alice", "alice@example.com");
+    }
+
+    @Test
+    void successFlow_DeleteAndVerifyRemoval() {
+        componentA.deleteUserByEmail("alice@example.com");
+        List<Map<String, Object>> results = componentB.getUserByEmail("alice@example.com");
+        assertTrue(results.isEmpty());
+    }
+
+    @Test
+    void partialFailure_DeleteNonExistentUser() {
+        componentA.deleteUserByEmail("invalid@example.com");
+        List<Map<String, Object>> results = componentB.getUserByEmail("invalid@example.com");
+        assertTrue(results.isEmpty()); // No error, just empty result
+    }
+
+    @Test
+    void edgeCase_InvalidEmailHandling() {
+        assertThrows(org.springframework.jdbc.BadSqlGrammarException.class,
+            () -> componentA.deleteUserByEmail(null));
+    }
+}

@@ -1,0 +1,74 @@
+
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.springframework.jdbc.core.JdbcTemplate;
+
+import javax.sql.DataSource;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+class IntegrationTest {
+
+    private ComponentA componentA;
+    private ComponentB componentB;
+    private JdbcTemplate jdbcTemplate;
+    private DataSource dataSource;
+
+    @BeforeEach
+    void setUp() {
+        dataSource = mock(DataSource.class);
+        jdbcTemplate = new JdbcTemplate(dataSource);
+        componentA = new ComponentA(dataSource);
+        componentB = new ComponentB(dataSource);
+
+        // Mock the jdbcTemplate behavior
+        when(jdbcTemplate.queryForList(anyString(), anyObject())).thenReturn(createMockUserList());
+        doNothing().when(jdbcTemplate).update(anyString(), anyObject());
+    }
+
+    @Test
+    void testIntegrationComponentAAndComponentB() {
+        // Delete a user using ComponentA
+        componentA.deleteUserByEmail("john.doe@example.com");
+
+        // Retrieve the deleted user using ComponentB
+        List<Map<String, Object>> users = componentB.getUserByEmail("john.doe@example.com");
+
+        // Validate that the user list is empty
+        assertTrue(users.isEmpty());
+    }
+
+    @Test
+    void testErrorHandlingComponentA() {
+        // Placeholder for error handling test cases in Component A
+    }
+
+    @Test
+    void testErrorHandlingComponentB() {
+        // Mock a scenario where an error occurs during query
+        when(jdbcTemplate.queryForList(anyString(), anyObject())).thenThrow(new RuntimeException("Database error"));
+
+        // Attempt to retrieve a user
+        Exception exception = assertThrows(RuntimeException.class, () -> {
+            componentB.getUserByEmail("john.doe@example.com");
+        });
+
+        // Validate the exception message
+        assertEquals("Database error", exception.getMessage());
+    }
+
+    private List<Map<String, Object>> createMockUserList() {
+        List<Map<String, Object>> userList = new ArrayList<>();
+        Map<String, Object> user = new HashMap<>();
+        user.put("id", 1);
+        user.put("name", "John Doe");
+        user.put("email", "john.doe@example.com");
+        userList.add(user);
+        return userList;
+    }
+}

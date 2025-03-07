@@ -1,0 +1,61 @@
+```java
+import static org.junit.jupiter.api.Assertions.*;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
+import java.io.IOException;
+import java.nio.file.*;
+import java.util.List;
+
+public class IntegrationTest {
+
+    private ComponentA componentA;
+    private ComponentB componentB;
+
+    @BeforeEach
+    public void setUp() {
+        componentA = new ComponentA();
+        componentB = new ComponentB();
+    }
+
+    @Test
+    public void testBackupAndRestore(@TempDir Path tempDir) throws IOException {
+        Path sourceDir = tempDir.resolve("source");
+        Path backupDir = tempDir.resolve("backup");
+        Path restoreDir = tempDir.resolve("restore");
+
+        Files.createDirectories(sourceDir);
+
+        Path file1 = sourceDir.resolve("file1.txt");
+        Path file2 = sourceDir.resolve("file2.txt");
+        Files.write(file1, List.of("Content of file1"));
+        Files.write(file2, List.of("Content of file2"));
+
+        componentA.backupDirectory(sourceDir.toString(), backupDir.toString());
+        componentB.restoreBackup(backupDir.toString(), restoreDir.toString());
+
+        boolean isRestored = componentB.verifyRestore(sourceDir.toString(), restoreDir.toString());
+        assertTrue(isRestored);
+    }
+
+    @Test
+    public void testBackupDirectoryWithNonExistentSource(@TempDir Path tempDir) {
+        Path nonExistentSource = tempDir.resolve("nonexistent");
+        Path backupDir = tempDir.resolve("backup");
+
+        assertThrows(IOException.class, () -> {
+            componentA.backupDirectory(nonExistentSource.toString(), backupDir.toString());
+        });
+    }
+
+    @Test
+    public void testRestoreBackupWithNonExistentBackupDir(@TempDir Path tempDir) {
+        Path backupDir = tempDir.resolve("nonexistentBackup");
+        Path restoreDir = tempDir.resolve("restore");
+
+        assertThrows(IOException.class, () -> {
+            componentB.restoreBackup(backupDir.toString(), restoreDir.toString());
+        });
+    }
+}
+```

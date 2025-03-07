@@ -1,0 +1,58 @@
+```java
+import static org.junit.jupiter.api.Assertions.*;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.springframework.jdbc.datasource.DriverManagerDataSource;
+import javax.sql.DataSource;
+import java.sql.Connection;
+import java.sql.Statement;
+import java.util.List;
+import java.util.Map;
+
+public class IntegrationTest {
+
+    private DataSource dataSource;
+    private ComponentA componentA;
+    private ComponentB componentB;
+
+    @BeforeEach
+    public void setUp() {
+        DriverManagerDataSource ds = new DriverManagerDataSource();
+        ds.setDriverClassName("org.h2.Driver");
+        ds.setUrl("jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1");
+        ds.setUsername("sa");
+        ds.setPassword("");
+        dataSource = ds;
+
+        try (Connection conn = dataSource.getConnection();
+             Statement stmt = conn.createStatement()) {
+            stmt.execute("CREATE TABLE IF NOT EXISTS users (id INT PRIMARY KEY, name VARCHAR(255), email VARCHAR(255))");
+            stmt.execute("INSERT INTO users (id, name, email) VALUES (1, 'Bob', 'bob@example.com')");
+        } catch (Exception e) {
+            fail("Setup failed");
+        }
+
+        componentA = new ComponentA(dataSource);
+        componentB = new ComponentB(dataSource);
+    }
+
+    @Test
+    public void testInteractionAndDataFlow() {
+        String email = "bob@example.com";
+        List<Map<String, Object>> beforeDeletion = componentB.getUserByEmail(email);
+        assertFalse(beforeDeletion.isEmpty());
+
+        componentA.deleteUserByEmail(email);
+
+        List<Map<String, Object>> afterDeletion = componentB.getUserByEmail(email);
+        assertTrue(afterDeletion.isEmpty());
+    }
+
+    @Test
+    public void testErrorHandling() {
+        assertThrows(Exception.class, () -> {
+            componentA.deleteUserByEmail(null);
+        });
+    }
+}
+```
