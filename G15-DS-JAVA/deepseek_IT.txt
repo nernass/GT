@@ -1,0 +1,66 @@
+```java
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
+
+public class ComponentIntegrationTest {
+
+    private ComponentA componentA;
+    private ComponentB componentB;
+
+    @BeforeEach
+    void setUp() {
+        componentA = new ComponentA();
+        componentB = new ComponentB();
+    }
+
+    @Test
+    void validInput_SavesToDatabase() {
+        String username = "validUser";
+        String email = "user@example.com";
+        String password = "password123";
+        
+        boolean isValid = componentA.validateInput(username, email, password);
+        assertTrue(isValid);
+        
+        boolean saveResult = componentB.saveToDatabase(username, email, password);
+        assertTrue(saveResult);
+        
+        String[] lastEntry = componentB.getLastEntry();
+        assertArrayEquals(new String[]{username, email, password}, lastEntry);
+    }
+
+    @Test
+    void invalidUsername_DoesNotSave() {
+        String username = "ab";
+        String email = "user@example.com";
+        String password = "password123";
+        
+        boolean isValid = componentA.validateInput(username, email, password);
+        assertFalse(isValid);
+        assertNull(componentB.getLastEntry());
+    }
+
+    @Test
+    void invalidEmail_DoesNotSave() {
+        String username = "validUser";
+        String email = "invalid-email";
+        String password = "password123";
+        
+        boolean isValid = componentA.validateInput(username, email, password);
+        assertFalse(isValid);
+        assertNull(componentB.getLastEntry());
+    }
+
+    @Test
+    void invalidPassword_DoesNotSave() {
+        String username = "validUser";
+        String email = "user@example.com";
+        String password = "short";
+        
+        boolean isValid = componentA.validateInput(username, email, password);
+        assertFalse(isValid);
+        assertNull(componentB.getLastEntry());
+    }
+}
+```

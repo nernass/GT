@@ -1,0 +1,119 @@
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
+
+import java.io.IOException;
+import java.nio.file.Paths;
+
+public class IntegrationTest {
+
+    private ComponentA componentA;
+    private ComponentB componentB;
+
+    @BeforeEach
+    public void setUp() {
+        // Placeholders for required setup
+        componentA = new ComponentA();
+        componentB = new ComponentB();
+
+        // Placeholders for creating test directories and files
+        // e.g., createTestFiles();
+    }
+
+    @Test
+    public void testIntegration_CompressAndExtract() throws IOException {
+        String sourceFile = "path/to/sourceFile.txt";
+        String zipFile = "path/to/outputFile.zip";
+        String outputDir = "path/to/outputDir";
+        String extractedFile = outputDir + "/" + Paths.get(sourceFile).getFileName().toString();
+
+        // Placeholder for creating a source file
+        // e.g., createTestFile(sourceFile);
+
+        // Compress the file using ComponentA
+        componentA.compressFile(sourceFile, zipFile);
+
+        // Extract the ZIP archive using ComponentB
+        componentB.extractZipFile(zipFile, outputDir);
+
+        // Verify that the extracted file matches the original
+        boolean isVerified = componentB.verifyExtractedFile(sourceFile, extractedFile);
+        assertTrue(isVerified);
+    }
+
+    @Test
+    public void testErrorHandling_CompressNonexistentFile() {
+        String nonexistentFile = "path/to/nonexistentFile.txt";
+        String zipFile = "path/to/outputFile.zip";
+
+        assertThrows(IOException.class, () -> {
+            componentA.compressFile(nonexistentFile, zipFile);
+        });
+    }
+
+    @Test
+    public void testErrorHandling_ExtractNonexistentZipFile() {
+        String nonexistentZipFile = "path/to/nonexistentFile.zip";
+        String outputDir = "path/to/outputDir";
+
+        assertThrows(IOException.class, () -> {
+            componentB.extractZipFile(nonexistentZipFile, outputDir);
+        });
+    }
+
+    @Test
+    public void testErrorHandling_VerifyExtractedFile_Mismatch() throws IOException {
+        String sourceFile = "path/to/sourceFile.txt";
+        String differentFile = "path/to/differentFile.txt";
+
+        // Placeholder for creating files with different content
+        // e.g., createTestFile(sourceFile, "Original content");
+        // e.g., createTestFile(differentFile, "Different content");
+
+        // Verify that the files do not match
+        boolean isVerified = componentB.verifyExtractedFile(sourceFile, differentFile);
+        assertFalse(isVerified);
+    }
+
+    @Test
+    public void testCompressFile_NullParameters() {
+        String sourceFile = "path/to/sourceFile.txt";
+        String zipFile = "path/to/outputFile.zip";
+
+        assertThrows(NullPointerException.class, () -> {
+            componentA.compressFile(null, zipFile);
+        });
+
+        assertThrows(NullPointerException.class, () -> {
+            componentA.compressFile(sourceFile, null);
+        });
+    }
+
+    @Test
+    public void testExtractZipFile_NullParameters() {
+        String zipFile = "path/to/outputFile.zip";
+        String outputDir = "path/to/outputDir";
+
+        assertThrows(NullPointerException.class, () -> {
+            componentB.extractZipFile(null, outputDir);
+        });
+
+        assertThrows(NullPointerException.class, () -> {
+            componentB.extractZipFile(zipFile, null);
+        });
+    }
+
+    @Test
+    public void testVerifyExtractedFile_NullParameters() throws IOException {
+        String sourceFile = "path/to/sourceFile.txt";
+        String extractedFile = "path/to/outputFile.txt";
+
+        assertThrows(NullPointerException.class, () -> {
+            componentB.verifyExtractedFile(null, extractedFile);
+        });
+
+        assertThrows(NullPointerException.class, () -> {
+            componentB.verifyExtractedFile(sourceFile, null);
+        });
+    }
+}

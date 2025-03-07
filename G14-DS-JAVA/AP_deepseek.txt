@@ -1,0 +1,64 @@
+import static org.junit.jupiter.api.Assertions.*;
+import org.junit.jupiter.api.Test;
+import java.util.Map;
+
+class ComponentIntegrationTest {
+
+    @Test
+    void successFlow_ValidInputs() {
+        ComponentA componentA = new ComponentA();
+        ComponentB componentB = new ComponentB();
+        
+        Map<String, Double> items = Map.of("apple", 2.0, "banana", 1.5);
+        Map<String, Integer> quantities = Map.of("apple", 3, "banana", 2);
+        
+        double total = componentA.calculateTotalCost(items, quantities);
+        double finalPrice = componentB.applyDiscount(total, 10.0);
+        
+        assertTrue(componentB.verifyFinalPrice(finalPrice, 8.1));
+    }
+
+    @Test
+    void invalidDiscount_ThrowsException() {
+        ComponentB componentB = new ComponentB();
+        assertThrows(IllegalArgumentException.class, () -> 
+            componentB.applyDiscount(100.0, 150.0)
+        );
+    }
+
+    @Test
+    void edgeCase_ZeroDiscount() {
+        ComponentA componentA = new ComponentA();
+        ComponentB componentB = new ComponentB();
+        
+        double total = componentA.calculateTotalCost(Map.of("item", 50.0), Map.of("item", 2));
+        double finalPrice = componentB.applyDiscount(total, 0.0);
+        
+        assertTrue(componentB.verifyFinalPrice(finalPrice, 100.0));
+    }
+
+    @Test
+    void edgeCase_EmptyItems() {
+        ComponentA componentA = new ComponentA();
+        ComponentB componentB = new ComponentB();
+        
+        double total = componentA.calculateTotalCost(Map.of(), Map.of("item", 5));
+        double finalPrice = componentB.applyDiscount(total, 30.0);
+        
+        assertTrue(componentB.verifyFinalPrice(finalPrice, 0.0));
+    }
+
+    @Test
+    void edgeCase_ExtraQuantities() {
+        ComponentA componentA = new ComponentA();
+        ComponentB componentB = new ComponentB();
+        
+        Map<String, Double> items = Map.of("apple", 2.0);
+        Map<String, Integer> quantities = Map.of("apple", 2, "orange", 3);
+        
+        double total = componentA.calculateTotalCost(items, quantities);
+        double finalPrice = componentB.applyDiscount(total, 20.0);
+        
+        assertTrue(componentB.verifyFinalPrice(finalPrice, 3.2));
+    }
+}

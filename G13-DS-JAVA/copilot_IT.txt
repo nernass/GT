@@ -1,0 +1,91 @@
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
+
+import java.io.IOException;
+import java.net.http.HttpClient;
+
+public class IntegrationTest {
+
+    private ComponentA componentA;
+    private ComponentB componentB;
+
+    @BeforeEach
+    public void setUp() {
+        // Placeholder for required setup
+        // Initialize ComponentA and ComponentB
+        componentA = new ComponentA();
+        componentB = new ComponentB();
+    }
+
+    @Test
+    public void testIntegration_CreateAndFetchResource() throws IOException, InterruptedException {
+        String resourceData = "{\"title\":\"foo\",\"body\":\"bar\",\"userId\":1}";
+
+        // Create a new resource using ComponentA
+        String createResponse = componentA.createResource(resourceData);
+
+        // Extract the resource ID from the createResponse
+        // Placeholder for JSON parsing (e.g., using a JSON library)
+        String resourceId = "1"; // Assume the ID is "1" for simplicity
+
+        // Fetch the resource using ComponentB
+        String fetchedResource = componentB.fetchResource(resourceId);
+
+        // Verify that the fetched resource matches the original data
+        assertTrue(componentB.verifyResourceDetails(fetchedResource, resourceData));
+    }
+
+    @Test
+    public void testErrorHandling_NullResourceData() {
+        // Test error handling when resourceData is null
+        assertThrows(NullPointerException.class, () -> {
+            componentA.createResource(null);
+        });
+    }
+
+    @Test
+    public void testErrorHandling_InvalidResourceId() {
+        // Test error handling when fetching a non-existent resource
+        String invalidResourceId = "invalid_id";
+        assertThrows(IOException.class, () -> {
+            componentB.fetchResource(invalidResourceId);
+        });
+    }
+
+    @Test
+    public void testVerifyResourceDetails_Mismatch() throws IOException, InterruptedException {
+        String resourceData = "{\"title\":\"foo\",\"body\":\"bar\",\"userId\":1}";
+        String differentData = "{\"title\":\"different\",\"body\":\"content\",\"userId\":2}";
+
+        // Create a new resource using ComponentA
+        String createResponse = componentA.createResource(resourceData);
+
+        // Extract the resource ID from the createResponse
+        // Placeholder for JSON parsing
+        String resourceId = "1"; // Assume the ID is "1" for simplicity
+
+        // Fetch the resource using ComponentB
+        String fetchedResource = componentB.fetchResource(resourceId);
+
+        // Verify that the fetched resource does not match the different data
+        assertFalse(componentB.verifyResourceDetails(fetchedResource, differentData));
+    }
+
+    @Test
+    public void testCreateResource_InvalidJson() {
+        // Test error handling with invalid JSON data
+        String invalidJson = "{invalid json}";
+        assertThrows(IOException.class, () -> {
+            componentA.createResource(invalidJson);
+        });
+    }
+
+    @Test
+    public void testFetchResource_NullResourceId() {
+        // Test error handling when resourceId is null
+        assertThrows(NullPointerException.class, () -> {
+            componentB.fetchResource(null);
+        });
+    }
+}

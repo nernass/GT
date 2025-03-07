@@ -1,0 +1,119 @@
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
+
+public class IntegrationTest {
+
+    private ComponentA componentA;
+    private ComponentB componentB;
+
+    @BeforeEach
+    public void setUp() {
+        // Initialize components
+        componentA = new ComponentA();
+        componentB = new ComponentB();
+    }
+
+    @Test
+    public void testValidInputAndSave() {
+        // Valid input data
+        String username = "testuser";
+        String email = "testuser@example.com";
+        String password = "password123";
+
+        // Validate input using ComponentA
+        boolean isValid = componentA.validateInput(username, email, password);
+        assertTrue(isValid, "Input should be valid");
+
+        // Save to database using ComponentB
+        boolean isSaved = componentB.saveToDatabase(username, email, password);
+        assertTrue(isSaved, "Data should be saved successfully");
+
+        // Retrieve the last entry and verify
+        String[] lastEntry = componentB.getLastEntry();
+        assertNotNull(lastEntry, "Last entry should not be null");
+        assertEquals(username, lastEntry[0]);
+        assertEquals(email, lastEntry[1]);
+        assertEquals(password, lastEntry[2]);
+    }
+
+    @Test
+    public void testInvalidUsername() {
+        // Invalid username (too short)
+        String username = "ab";
+        String email = "user@example.com";
+        String password = "password123";
+
+        // Validate input using ComponentA
+        boolean isValid = componentA.validateInput(username, email, password);
+        assertFalse(isValid, "Username is invalid");
+
+        // Attempt to save to database
+        boolean isSaved = componentB.saveToDatabase(username, email, password);
+        assertFalse(isSaved, "Data should not be saved with invalid username");
+    }
+
+    @Test
+    public void testInvalidEmail() {
+        // Invalid email format
+        String username = "validuser";
+        String email = "invalidemail";
+        String password = "password123";
+
+        // Validate input using ComponentA
+        boolean isValid = componentA.validateInput(username, email, password);
+        assertFalse(isValid, "Email is invalid");
+
+        // Attempt to save to database
+        boolean isSaved = componentB.saveToDatabase(username, email, password);
+        assertFalse(isSaved, "Data should not be saved with invalid email");
+    }
+
+    @Test
+    public void testInvalidPassword() {
+        // Invalid password (too short)
+        String username = "validuser";
+        String email = "user@example.com";
+        String password = "pass";
+
+        // Validate input using ComponentA
+        boolean isValid = componentA.validateInput(username, email, password);
+        assertFalse(isValid, "Password is invalid");
+
+        // Attempt to save to database
+        boolean isSaved = componentB.saveToDatabase(username, email, password);
+        assertFalse(isSaved, "Data should not be saved with invalid password");
+    }
+
+    @Test
+    public void testNullInputs() {
+        // Null inputs
+        String username = null;
+        String email = null;
+        String password = null;
+
+        // Validate input using ComponentA
+        boolean isValid = componentA.validateInput(username, email, password);
+        assertFalse(isValid, "Inputs are invalid");
+
+        // Attempt to save to database
+        boolean isSaved = componentB.saveToDatabase(username, email, password);
+        assertFalse(isSaved, "Data should not be saved with null inputs");
+    }
+
+    @Test
+    public void testSaveWithoutValidation() {
+        // Invalid inputs bypassing validation
+        String username = "ab";
+        String email = "invalidemail";
+        String password = "pass";
+
+        // Attempt to save to database without validation
+        boolean isSaved = componentB.saveToDatabase(username, email, password);
+        assertFalse(isSaved, "Data should not be saved with invalid inputs");
+
+        // Ensure that no entry was added
+        String[] lastEntry = componentB.getLastEntry();
+        assertNull(lastEntry, "No valid entry should exist in the database");
+    }
+}

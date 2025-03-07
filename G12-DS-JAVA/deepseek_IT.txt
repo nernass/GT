@@ -1,0 +1,66 @@
+```java
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import static org.junit.jupiter.api.Assertions.*;
+
+public class ComponentIntegrationTest {
+
+    @TempDir
+    Path tempDir;
+
+    private ComponentA componentA;
+    private ComponentB componentB;
+    private Path originalFile;
+    private Path zipFile;
+    private Path extractDir;
+
+    @BeforeEach
+    void setUp() throws Exception {
+        componentA = new ComponentA();
+        componentB = new ComponentB();
+        
+        originalFile = tempDir.resolve("original.txt");
+        zipFile = tempDir.resolve("archive.zip");
+        extractDir = tempDir.resolve("extracted");
+
+        Files.write(originalFile, "Test data for compression".getBytes());
+    }
+
+    @Test
+    void compressAndExtract_Success() throws Exception {
+        componentA.compressFile(originalFile.toString(), zipFile.toString());
+        componentB.extractZipFile(zipFile.toString(), extractDir.toString());
+
+        Path extractedFile = extractDir.resolve(originalFile.getFileName());
+        assertTrue(componentB.verifyExtractedFile(
+            originalFile.toString(),
+            extractedFile.toString()
+        ));
+    }
+
+    @Test
+    void extractNonExistentZip_ThrowsException() {
+        Path invalidZip = tempDir.resolve("invalid.zip");
+        assertThrows(IOException.class, () ->
+            componentB.extractZipFile(invalidZip.toString(), extractDir.toString())
+        );
+    }
+
+    @Test
+    void verifyFailsWhenTampered() throws Exception {
+        componentA.compressFile(originalFile.toString(), zipFile.toString());
+        componentB.extractZipFile(zipFile.toString(), extractDir.toString());
+
+        Path extractedFile = extractDir.resolve(originalFile.getFileName());
+        Files.write(extractedFile, "Tampered content".getBytes());
+
+        assertFalse(componentB.verifyExtractedFile(
+            originalFile.toString(),
+            extractedFile.toString()
+        ));
+    }
+}
+```

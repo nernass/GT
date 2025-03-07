@@ -1,0 +1,91 @@
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
+
+public class IntegrationTest {
+
+    @Mock
+    private ComponentB mockComponentB;
+
+    @InjectMocks
+    private ComponentA componentA;
+
+    @BeforeEach
+    void setUp() {
+        MockitoAnnotations.openMocks(this);
+    }
+
+    @Test
+    void testIntegrationSuccess() {
+        // Arrange
+        String username = "user123";
+        String email = "user@example.com";
+        String password = "password123";
+
+        // Mock ComponentB to return true for successful save
+        when(mockComponentB.saveToDatabase(username, email, password)).thenReturn(true);
+
+        // Act
+        boolean isValid = componentA.validateInput(username, email, password);
+        boolean isSaved = mockComponentB.saveToDatabase(username, email, password);
+        String[] lastEntry = mockComponentB.getLastEntry();
+
+        // Assert
+        assertTrue(isValid);
+        assertTrue(isSaved);
+        assertNotNull(lastEntry);
+        assertEquals(username, lastEntry[0]);
+        assertEquals(email, lastEntry[1]);
+        assertEquals(password, lastEntry[2]);
+        verify(mockComponentB).saveToDatabase(username, email, password);
+    }
+
+    @Test
+    void testIntegrationFailure() {
+        // Arrange
+        String username = "user";
+        String email = "user@example.com";
+        String password = "password123";
+
+        // Mock ComponentB to return false for failed save
+        when(mockComponentB.saveToDatabase(username, email, password)).thenReturn(false);
+
+        // Act
+        boolean isValid = componentA.validateInput(username, email, password);
+        boolean isSaved = mockComponentB.saveToDatabase(username, email, password);
+        String[] lastEntry = mockComponentB.getLastEntry();
+
+        // Assert
+        assertFalse(isValid);
+        assertFalse(isSaved);
+        assertNull(lastEntry);
+        verify(mockComponentB, never()).saveToDatabase(username, email, password);
+    }
+
+    @Test
+    void testIntegrationEdgeCase() {
+        // Arrange
+        String username = "us";
+        String email = "userexample.com";
+        String password = "pass";
+
+        // Mock ComponentB to return false for failed save
+        when(mockComponentB.saveToDatabase(username, email, password)).thenReturn(false);
+
+        // Act
+        boolean isValid = componentA.validateInput(username, email, password);
+        boolean isSaved = mockComponentB.saveToDatabase(username, email, password);
+        String[] lastEntry = mockComponentB.getLastEntry();
+
+        // Assert
+        assertFalse(isValid);
+        assertFalse(isSaved);
+        assertNull(lastEntry);
+        verify(mockComponentB, never()).saveToDatabase(username, email, password);
+    }
+}

@@ -1,0 +1,107 @@
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
+
+import java.util.HashMap;
+import java.util.Map;
+
+class IntegrationTest {
+
+    @Mock
+    private ComponentB mockComponentB;
+
+    @InjectMocks
+    private ComponentA componentA;
+
+    @BeforeEach
+    void setUp() {
+        MockitoAnnotations.openMocks(this);
+    }
+
+    @Test
+    void testIntegrationSuccess() {
+        // Arrange
+        Map<String, Double> items = new HashMap<>();
+        items.put("Item1", 10.0);
+        items.put("Item2", 20.0);
+
+        Map<String, Integer> quantities = new HashMap<>();
+        quantities.put("Item1", 2);
+        quantities.put("Item2", 1);
+
+        double totalCost = componentA.calculateTotalCost(items, quantities);
+        double discountPercentage = 10.0;
+        double expectedFinalPrice = 36.0; // (10*2 + 20*1) * 0.9
+
+        // Mock ComponentB to return the expected final price
+        when(mockComponentB.applyDiscount(totalCost, discountPercentage)).thenReturn(expectedFinalPrice);
+
+        // Act
+        double finalPrice = mockComponentB.applyDiscount(totalCost, discountPercentage);
+        boolean isVerified = mockComponentB.verifyFinalPrice(finalPrice, expectedFinalPrice);
+
+        // Assert
+        assertTrue(isVerified);
+        verify(mockComponentB).applyDiscount(totalCost, discountPercentage);
+        verify(mockComponentB).verifyFinalPrice(finalPrice, expectedFinalPrice);
+    }
+
+    @Test
+    void testIntegrationFailure() {
+        // Arrange
+        Map<String, Double> items = new HashMap<>();
+        items.put("Item1", 10.0);
+        items.put("Item2", 20.0);
+
+        Map<String, Integer> quantities = new HashMap<>();
+        quantities.put("Item1", 2);
+        quantities.put("Item2", 1);
+
+        double totalCost = componentA.calculateTotalCost(items, quantities);
+        double discountPercentage = 110.0; // Invalid discount percentage
+
+        // Act & Assert
+        Exception exception = assertThrows(IllegalArgumentException.class, () -> {
+            mockComponentB.applyDiscount(totalCost, discountPercentage);
+        });
+        assertEquals("Discount percentage must be between 0 and 100", exception.getMessage());
+
+        boolean isVerified = mockComponentB.verifyFinalPrice(0.0, 0.0);
+        assertFalse(isVerified);
+        verify(mockComponentB).applyDiscount(totalCost, discountPercentage);
+        verify(mockComponentB).verifyFinalPrice(0.0, 0.0);
+    }
+
+    @Test
+    void testIntegrationEdgeCase() {
+        // Arrange
+        Map<String, Double> items = new HashMap<>();
+        items.put("Item1", 0.0);
+        items.put("Item2", 0.0);
+
+        Map<String, Integer> quantities = new HashMap<>();
+        quantities.put("Item1", 0);
+        quantities.put("Item2", 0);
+
+        double totalCost = componentA.calculateTotalCost(items, quantities);
+        double discountPercentage = 0.0;
+        double expectedFinalPrice = 0.0; // (0*0 + 0*0) * 1
+
+        // Mock ComponentB to return the expected final price
+        when(mockComponentB.applyDiscount(totalCost, discountPercentage)).thenReturn(expectedFinalPrice);
+
+        // Act
+        double finalPrice = mockComponentB.applyDiscount(totalCost, discountPercentage);
+        boolean isVerified = mockComponentB.verifyFinalPrice(finalPrice, expectedFinalPrice);
+
+        // Assert
+        assertTrue(isVerified);
+        verify(mockComponentB).applyDiscount(totalCost, discountPercentage);
+        verify(mockComponentB).verifyFinalPrice(finalPrice, expectedFinalPrice);
+    }
+}

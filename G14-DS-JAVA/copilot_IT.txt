@@ -1,0 +1,142 @@
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
+
+import java.util.HashMap;
+import java.util.Map;
+
+public class IntegrationTest {
+
+    private ComponentA componentA;
+    private ComponentB componentB;
+
+    @BeforeEach
+    public void setUp() {
+        // Placeholders for required setup
+        componentA = new ComponentA();
+        componentB = new ComponentB();
+    }
+
+    @Test
+    public void testIntegration_NormalFlow() {
+        // Test normal interaction and data flow
+        Map<String, Double> items = new HashMap<>();
+        items.put("Apple", 2.0);
+        items.put("Banana", 1.5);
+        items.put("Orange", 3.0);
+
+        Map<String, Integer> quantities = new HashMap<>();
+        quantities.put("Apple", 5);
+        quantities.put("Banana", 10);
+        quantities.put("Orange", 2);
+
+        double totalCost = componentA.calculateTotalCost(items, quantities);
+        double discountPercentage = 10.0;
+        double finalPrice = componentB.applyDiscount(totalCost, discountPercentage);
+
+        double expectedTotalCost = (2.0 * 5) + (1.5 * 10) + (3.0 * 2);
+        double expectedFinalPrice = expectedTotalCost * (1 - discountPercentage / 100);
+
+        assertEquals(expectedTotalCost, totalCost, 0.001);
+        assertEquals(expectedFinalPrice, finalPrice, 0.001);
+        assertTrue(componentB.verifyFinalPrice(finalPrice, expectedFinalPrice));
+    }
+
+    @Test
+    public void testErrorHandling_InvalidDiscount() {
+        Map<String, Double> items = new HashMap<>();
+        items.put("Apple", 2.0);
+
+        Map<String, Integer> quantities = new HashMap<>();
+        quantities.put("Apple", 5);
+
+        double totalCost = componentA.calculateTotalCost(items, quantities);
+        double invalidDiscount = -5.0; // Invalid discount percentage
+
+        assertThrows(IllegalArgumentException.class, () -> {
+            componentB.applyDiscount(totalCost, invalidDiscount);
+        });
+    }
+
+    @Test
+    public void testErrorHandling_NullItems() {
+        Map<String, Integer> quantities = new HashMap<>();
+        quantities.put("Apple", 5);
+
+        assertThrows(NullPointerException.class, () -> {
+            componentA.calculateTotalCost(null, quantities);
+        });
+    }
+
+    @Test
+    public void testErrorHandling_NullQuantities() {
+        Map<String, Double> items = new HashMap<>();
+        items.put("Apple", 2.0);
+
+        assertThrows(NullPointerException.class, () -> {
+            componentA.calculateTotalCost(items, null);
+        });
+    }
+
+    @Test
+    public void testIntegration_ZeroQuantities() {
+        Map<String, Double> items = new HashMap<>();
+        items.put("Apple", 2.0);
+        items.put("Banana", 1.5);
+
+        Map<String, Integer> quantities = new HashMap<>();
+        quantities.put("Apple", 0);
+        quantities.put("Banana", 0);
+
+        double totalCost = componentA.calculateTotalCost(items, quantities);
+        assertEquals(0.0, totalCost, 0.001);
+    }
+
+    @Test
+    public void testIntegration_NegativePrices() {
+        Map<String, Double> items = new HashMap<>();
+        items.put("Apple", -2.0); // Negative price
+
+        Map<String, Integer> quantities = new HashMap<>();
+        quantities.put("Apple", 5);
+
+        double totalCost = componentA.calculateTotalCost(items, quantities);
+        assertEquals(-10.0, totalCost, 0.001);
+    }
+
+    @Test
+    public void testVerifyFinalPrice_Mismatch() {
+        double finalPrice = 90.0;
+        double expectedPrice = 100.0;
+
+        assertFalse(componentB.verifyFinalPrice(finalPrice, expectedPrice));
+    }
+
+    @Test
+    public void testApplyDiscount_BoundaryValues() {
+        double totalCost = 100.0;
+        double zeroDiscount = 0.0;
+        double hundredDiscount = 100.0;
+
+        double finalPriceZeroDiscount = componentB.applyDiscount(totalCost, zeroDiscount);
+        assertEquals(100.0, finalPriceZeroDiscount, 0.001);
+
+        double finalPriceFullDiscount = componentB.applyDiscount(totalCost, hundredDiscount);
+        assertEquals(0.0, finalPriceFullDiscount, 0.001);
+    }
+
+    @Test
+    public void testCalculateTotalCost_ItemNotInQuantities() {
+        Map<String, Double> items = new HashMap<>();
+        items.put("Apple", 2.0);
+        items.put("Banana", 1.5);
+
+        Map<String, Integer> quantities = new HashMap<>();
+        quantities.put("Apple", 5);
+        // Banana not in quantities map
+
+        double totalCost = componentA.calculateTotalCost(items, quantities);
+        double expectedTotalCost = (2.0 * 5) + (1.5 * 0);
+        assertEquals(expectedTotalCost, totalCost, 0.001);
+    }
+}

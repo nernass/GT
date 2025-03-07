@@ -1,0 +1,108 @@
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
+
+import java.io.IOException;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+
+class IntegrationTest {
+
+    @Mock
+    private HttpClient mockHttpClient;
+
+    @Mock
+    private HttpResponse<String> mockHttpResponse;
+
+    @InjectMocks
+    private ComponentA componentA;
+
+    @InjectMocks
+    private ComponentB componentB;
+
+    @BeforeEach
+    void setUp() {
+        MockitoAnnotations.openMocks(this);
+        when(mockHttpClient.send(any(HttpRequest.class), any(HttpResponse.BodyHandler.class))).thenReturn(mockHttpResponse);
+    }
+
+    @Test
+    void testIntegrationSuccess() throws IOException, InterruptedException {
+        // Arrange
+        String resourceData = "{\"title\": \"foo\", \"body\": \"bar\", \"userId\": 1}";
+        String expectedResourceId = "{\"id\": 101}";
+        String expectedFetchedResource = "{\"id\": 101, \"title\": \"foo\", \"body\": \"bar\", \"userId\": 1}";
+
+        // Mock ComponentA response
+        when(mockHttpResponse.body()).thenReturn(expectedResourceId);
+
+        // Mock ComponentB response
+        when(mockHttpResponse.body()).thenReturn(expectedFetchedResource);
+
+        // Act
+        String resourceId = componentA.createResource(resourceData);
+        String fetchedResource = componentB.fetchResource(resourceId);
+        boolean isVerified = componentB.verifyResourceDetails(fetchedResource, expectedFetchedResource);
+
+        // Assert
+        assertTrue(isVerified);
+        verify(mockHttpClient, times(2)).send(any(HttpRequest.class), any(HttpResponse.BodyHandler.class));
+        verify(mockHttpResponse, times(2)).body();
+    }
+
+    @Test
+    void testIntegrationFailure() throws IOException, InterruptedException {
+        // Arrange
+        String resourceData = "{\"title\": \"foo\", \"body\": \"bar\", \"userId\": 1}";
+        String expectedResourceId = "{\"id\": 101}";
+
+        // Mock ComponentA response
+        when(mockHttpResponse.body()).thenReturn(expectedResourceId);
+
+        // Mock ComponentB to throw an exception
+        doThrow(new IOException("Fetch Error")).when(mockHttpClient).send(any(HttpRequest.class), any(HttpResponse.BodyHandler.class));
+
+        // Act & Assert
+        String resourceId = componentA.createResource(resourceData);
+        Exception fetchException = assertThrows(IOException.class, () -> {
+            componentB.fetchResource(resourceId);
+        });
+        assertEquals("Fetch Error", fetchException.getMessage());
+
+        boolean isVerified = componentB.verifyResourceDetails("", "");
+        assertFalse(isVerified);
+        verify(mockHttpClient, times(2)).send(any(HttpRequest.class), any(HttpResponse.BodyHandler.class));
+        verify(mockHttpResponse).body();
+    }
+
+    @Test
+    void testIntegrationEdgeCase() throws IOException, InterruptedException {
+        // Arrange
+        String resourceData = "{}";
+        String expectedResourceId = "{\"id\": 101}";
+        String expectedFetchedResource = "{\"id\": 101}";
+
+        // Mock ComponentA response
+        when(mockHttpResponse.body()).thenReturn(expectedResourceId);
+
+        // Mock ComponentB response
+        when(mockHttpResponse.body()).thenReturn(expectedFetchedResource);
+
+        // Act
+        String resourceId = componentA.createResource(resourceData);
+        String fetchedResource = componentB.fetchResource(resourceId);
+        boolean isVerified = componentB.verifyResourceDetails(fetchedResource, expectedFetchedResource);
+
+        // Assert
+        assertTrue(isVerified);
+        verify(mockHttpClient, times(2)).send(any(HttpRequest.class), any(HttpResponse.BodyHandler.class));
+        verify(mockHttpResponse, times(2)).body();
+    }
+}

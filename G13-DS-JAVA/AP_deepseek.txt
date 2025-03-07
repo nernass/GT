@@ -1,0 +1,39 @@
+import static org.junit.jupiter.api.Assertions.*;
+import org.junit.jupiter.api.Test;
+import java.io.IOException;
+
+class ComponentIntegrationTest {
+
+    @Test
+    void successFlow_CreateAndVerifyResource() throws IOException, InterruptedException {
+        ComponentA componentA = new ComponentA();
+        ComponentB componentB = new ComponentB();
+        
+        String testData = "{\"title\": \"test\", \"body\": \"content\", \"userId\": 1}";
+        String createdResponse = componentA.createResource(testData);
+        String resourceId = extractId(createdResponse);
+        
+        String fetchedResponse = componentB.fetchResource(resourceId);
+        assertTrue(componentB.verifyResourceDetails(fetchedResponse, createdResponse));
+    }
+
+    @Test
+    void invalidResourceFetch_ReturnsMismatch() throws IOException, InterruptedException {
+        ComponentB componentB = new ComponentB();
+        String fetchedData = componentB.fetchResource("99999");
+        assertFalse(componentB.verifyResourceDetails(fetchedData, "expected_data"));
+    }
+
+    @Test
+    void invalidPostData_ThrowsException() {
+        ComponentA componentA = new ComponentA();
+        assertThrows(IOException.class, () -> 
+            componentA.createResource("invalid_json")
+        );
+    }
+
+    private String extractId(String json) {
+        // Simplified ID extraction for demonstration
+        return json.split("\"id\":")[1].split(",")[0].trim();
+    }
+}

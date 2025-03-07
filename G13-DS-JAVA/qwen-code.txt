@@ -1,0 +1,107 @@
+
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
+
+import java.io.IOException;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+
+class IntegrationTest {
+
+    @Mock
+    private HttpClient mockHttpClient;
+
+    @Mock
+    private HttpResponse<String> mockHttpResponse;
+
+    @InjectMocks
+    private ComponentA componentA;
+
+    @InjectMocks
+    private ComponentB componentB;
+
+    @BeforeEach
+    void setUp() throws IOException, InterruptedException {
+        MockitoAnnotations.openMocks(this);
+
+        // Mock the behavior of HttpClient for ComponentA
+        when(mockHttpClient.send(any(HttpRequest.class), eq(HttpResponse.BodyHandlers.ofString())))
+            .thenReturn(mockHttpResponse);
+
+        // Mock the response body for ComponentA
+        when(mockHttpResponse.body()).thenReturn("{\"id\": \"1\", \"title\": \"Test Title\", \"body\": \"Test Body\"}");
+
+        // Mock the behavior of HttpClient for ComponentB
+        when(mockHttpClient.send(any(HttpRequest.class), eq(HttpResponse.BodyHandlers.ofString())))
+            .thenReturn(mockHttpResponse);
+
+        // Mock the response body for ComponentB
+        when(mockHttpResponse.body()).thenReturn("{\"id\": \"1\", \"title\": \"Test Title\", \"body\": \"Test Body\"}");
+    }
+
+    @Test
+    void testIntegrationComponentAAndComponentB() throws IOException, InterruptedException {
+        String resourceData = "{\"title\": \"Test Title\", \"body\": \"Test Body\"}";
+        String expectedData = "{\"id\": \"1\", \"title\": \"Test Title\", \"body\": \"Test Body\"}";
+
+        // Create a resource using ComponentA
+        String responseFromA = componentA.createResource(resourceData);
+
+        // Extract the resource ID from the response (for simplicity, assume the response contains the ID)
+        String resourceId = extractResourceId(responseFromA);
+
+        // Fetch the resource using ComponentB
+        String fetchedResource = componentB.fetchResource(resourceId);
+
+        // Verify the fetched resource using ComponentB
+        boolean isVerified = componentB.verifyResourceDetails(fetchedResource, expectedData);
+
+        // Validate that the fetched resource matches the expected data
+        assertTrue(isVerified);
+    }
+
+    @Test
+    void testErrorHandlingComponentA() throws IOException, InterruptedException {
+        String resourceData = "{\"title\": \"Test Title\", \"body\": \"Test Body\"}";
+
+        // Mock an IOException for ComponentA
+        when(mockHttpClient.send(any(HttpRequest.class), eq(HttpResponse.BodyHandlers.ofString())))
+            .thenThrow(new IOException("Network error"));
+
+        Exception exception = assertThrows(IOException.class, () -> {
+            componentA.createResource(resourceData);
+        });
+
+        // Validate the exception message
+        assertEquals("Network error", exception.getMessage());
+    }
+
+    @Test
+    void testErrorHandlingComponentB() throws IOException, InterruptedException {
+        String resourceId = "1";
+
+        // Mock an IOException for ComponentB
+        when(mockHttpClient.send(any(HttpRequest.class), eq(HttpResponse.BodyHandlers.ofString())))
+            .thenThrow(new IOException("Network error"));
+
+        Exception exception = assertThrows(IOException.class, () -> {
+            componentB.fetchResource(resourceId);
+        });
+
+        // Validate the exception message
+        assertEquals("Network error", exception.getMessage());
+    }
+
+    private String extractResourceId(String responseBody) {
+        // For simplicity, assume the response contains the ID directly
+        return responseBody.split("\"id\": ")[1].split(",")[0].replace("\"", "");
+    }
+}

@@ -1,0 +1,70 @@
+import static org.junit.jupiter.api.Assertions.*;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+
+class ComponentIntegrationTest {
+
+    @TempDir
+    Path tempDir;
+
+    @Test
+    void successFlow_CompressExtractVerify() throws IOException {
+        // Create source file
+        Path sourceFile = tempDir.resolve("test.txt");
+        Files.writeString(sourceFile, "Integration Test Data");
+        
+        // Compress
+        ComponentA componentA = new ComponentA();
+        Path zipFile = tempDir.resolve("archive.zip");
+        componentA.compressFile(sourceFile.toString(), zipFile.toString());
+        
+        // Extract
+        ComponentB componentB = new ComponentB();
+        Path extractDir = tempDir.resolve("extracted");
+        componentB.extractZipFile(zipFile.toString(), extractDir.toString());
+        
+        // Verify
+        Path extractedFile = extractDir.resolve(sourceFile.getFileName());
+        assertTrue(componentB.verifyExtractedFile(sourceFile.toString(), extractedFile.toString()));
+    }
+
+    @Test
+    void extractNonExistentZip_ThrowsException() {
+        ComponentB componentB = new ComponentB();
+        Path invalidZip = tempDir.resolve("missing.zip");
+        
+        assertThrows(IOException.class, () ->
+            componentB.extractZipFile(invalidZip.toString(), tempDir.toString())
+        );
+    }
+
+    @Test
+    void compressInvalidSource_ThrowsException() {
+        ComponentA componentA = new ComponentA();
+        Path invalidSource = tempDir.resolve("non_existent.txt");
+        
+        assertThrows(IOException.class, () ->
+            componentA.compressFile(invalidSource.toString(), tempDir.resolve("dummy.zip").toString())
+        );
+    }
+
+    @Test
+    void edgeCase_EmptyFileHandling() throws IOException {
+        Path emptyFile = tempDir.resolve("empty.txt");
+        Files.createFile(emptyFile);
+        
+        ComponentA componentA = new ComponentA();
+        Path zipFile = tempDir.resolve("empty.zip");
+        componentA.compressFile(emptyFile.toString(), zipFile.toString());
+        
+        ComponentB componentB = new ComponentB();
+        Path extractDir = tempDir.resolve("empty_extract");
+        componentB.extractZipFile(zipFile.toString(), extractDir.toString());
+        
+        Path extractedFile = extractDir.resolve(emptyFile.getFileName());
+        assertTrue(componentB.verifyExtractedFile(emptyFile.toString(), extractedFile.toString()));
+    }
+}

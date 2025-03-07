@@ -1,0 +1,64 @@
+import static org.junit.jupiter.api.Assertions.*;
+import org.junit.jupiter.api.Test;
+import java.util.Map;
+
+class ComponentIntegrationTest {
+
+    @Test
+    void successFlow_ValidInputSavesToDatabase() {
+        ComponentA componentA = new ComponentA();
+        ComponentB componentB = new ComponentB();
+        
+        String username = "validUser";
+        String email = "valid@example.com";
+        String password = "validPassword123";
+        
+        boolean isValid = componentA.validateInput(username, email, password);
+        assertTrue(isValid);
+        
+        boolean isSaved = componentB.saveToDatabase(username, email, password);
+        assertTrue(isSaved);
+        
+        String[] lastEntry = componentB.getLastEntry();
+        assertArrayEquals(new String[]{username, email, password}, lastEntry);
+    }
+
+    @Test
+    void invalidEmail_ValidationFailsNoSave() {
+        ComponentA componentA = new ComponentA();
+        ComponentB componentB = new ComponentB();
+        
+        String username = "validUser";
+        String email = "invalid-email";
+        String password = "validPassword123";
+        
+        boolean isValid = componentA.validateInput(username, email, password);
+        assertFalse(isValid);
+        assertNull(componentB.getLastEntry());
+    }
+
+    @Test
+    void edgeCase_MinimalValidInput() {
+        ComponentA componentA = new ComponentA();
+        ComponentB componentB = new ComponentB();
+        
+        String username = "usr";
+        String email = "a@b.c";
+        String password = "12345678";
+        
+        assertTrue(componentA.validateInput(username, email, password));
+        assertTrue(componentB.saveToDatabase(username, email, password));
+        assertArrayEquals(new String[]{username, email, password}, componentB.getLastEntry());
+    }
+
+    @Test
+    void nullInput_ValidationFails() {
+        ComponentA componentA = new ComponentA();
+        ComponentB componentB = new ComponentB();
+        
+        assertFalse(componentA.validateInput(null, "valid@email.com", "password"));
+        assertFalse(componentA.validateInput("user", null, "password"));
+        assertFalse(componentA.validateInput("user", "valid@email.com", null));
+        assertNull(componentB.getLastEntry());
+    }
+}

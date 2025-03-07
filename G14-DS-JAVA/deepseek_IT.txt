@@ -1,0 +1,51 @@
+```java
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import java.util.Map;
+import static org.junit.jupiter.api.Assertions.*;
+import static java.util.Map.entry;
+
+public class ComponentIntegrationTest {
+
+    private ComponentA componentA;
+    private ComponentB componentB;
+    private Map<String, Double> items;
+    private Map<String, Integer> quantities;
+
+    @BeforeEach
+    void setUp() {
+        componentA = new ComponentA();
+        componentB = new ComponentB();
+        items = Map.ofEntries(
+            entry("Book", 15.99),
+            entry("Pen", 2.50)
+        );
+        quantities = Map.ofEntries(
+            entry("Book", 3),
+            entry("Pen", 5)
+        );
+    }
+
+    @Test
+    void calculateAndApplyDiscount_Success() {
+        double total = componentA.calculateTotalCost(items, quantities);
+        double discounted = componentB.applyDiscount(total, 10.0);
+        assertTrue(componentB.verifyFinalPrice(discounted, (15.99*3 + 2.50*5) * 0.9));
+    }
+
+    @Test
+    void applyInvalidDiscount_ThrowsException() {
+        double total = componentA.calculateTotalCost(items, quantities);
+        assertThrows(IllegalArgumentException.class, () ->
+            componentB.applyDiscount(total, 110.0)
+        );
+    }
+
+    @Test
+    void verifyFinalPrice_FailsWhenMismatched() {
+        double total = componentA.calculateTotalCost(items, quantities);
+        double discounted = componentB.applyDiscount(total, 20.0);
+        assertFalse(componentB.verifyFinalPrice(discounted, total * 0.15));
+    }
+}
+```

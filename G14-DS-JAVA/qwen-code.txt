@@ -1,0 +1,88 @@
+
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.mockito.InjectMocks;
+import org.mockito.MockitoAnnotations;
+
+import java.util.HashMap;
+import java.util.Map;
+
+class IntegrationTest {
+
+    @InjectMocks
+    private ComponentA componentA;
+
+    @InjectMocks
+    private ComponentB componentB;
+
+    @BeforeEach
+    void setUp() {
+        MockitoAnnotations.openMocks(this);
+    }
+
+    @Test
+    void testIntegrationComponentAAndComponentB() {
+        // Define item prices and quantities
+        Map<String, Double> items = new HashMap<>();
+        items.put("Item1", 10.0);
+        items.put("Item2", 20.0);
+
+        Map<String, Integer> quantities = new HashMap<>();
+        quantities.put("Item1", 2);
+        quantities.put("Item2", 3);
+
+        // Calculate the total cost using ComponentA
+        double totalCost = componentA.calculateTotalCost(items, quantities);
+
+        // Apply a discount using ComponentB
+        double discountPercentage = 10.0;
+        double finalPrice = componentB.applyDiscount(totalCost, discountPercentage);
+
+        // Define the expected final price
+        double expectedPrice = 80.0; // (10 * 2 + 20 * 3) * (1 - 10 / 100) = 80.0
+
+        // Verify the final price using ComponentB
+        boolean isVerified = componentB.verifyFinalPrice(finalPrice, expectedPrice);
+
+        // Validate that the final price matches the expected price
+        assertTrue(isVerified);
+    }
+
+    @Test
+    void testErrorHandlingComponentA() {
+        // Define item prices and quantities with a missing quantity
+        Map<String, Double> items = new HashMap<>();
+        items.put("Item1", 10.0);
+        items.put("Item2", 20.0);
+
+        Map<String, Integer> quantities = new HashMap<>();
+        quantities.put("Item1", 2); // Missing quantity for Item2
+
+        // Calculate the total cost using ComponentA
+        double totalCost = componentA.calculateTotalCost(items, quantities);
+
+        // Define the expected total cost (only Item1 is considered)
+        double expectedTotalCost = 20.0; // 10 * 2
+
+        // Validate that the total cost matches the expected total cost
+        assertEquals(expectedTotalCost, totalCost);
+    }
+
+    @Test
+    void testErrorHandlingComponentB() {
+        // Define an invalid discount percentage
+        double totalCost = 100.0;
+        double invalidDiscountPercentage = 110.0;
+
+        // Apply a discount using ComponentB and expect an exception
+        Exception exception = assertThrows(IllegalArgumentException.class, () -> {
+            componentB.applyDiscount(totalCost, invalidDiscountPercentage);
+        });
+
+        // Validate the exception message
+        assertEquals("Discount percentage must be between 0 and 100", exception.getMessage());
+    }
+}

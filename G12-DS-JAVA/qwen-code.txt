@@ -1,0 +1,138 @@
+
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
+
+import java.io.*;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+
+class IntegrationTest {
+
+    private ComponentA componentA;
+    private ComponentB componentB;
+
+    @Mock
+    private FileInputStream mockFileInputStream;
+    @Mock
+    private FileOutputStream mockFileOutputStream;
+    @Mock
+    private ZipInputStream mockZipInputStream;
+    @Mock
+    private ZipOutputStream mockZipOutputStream;
+
+    @BeforeEach
+    void setUp() throws IOException {
+        MockitoAnnotations.openMocks(this);
+        componentA = new ComponentA();
+        componentB = new ComponentB();
+
+        // Create temporary files for testing
+        File tempSourceFile = File.createTempFile("tempSource", ".txt");
+        File tempZipFile = File.createTempFile("tempZip", ".zip");
+        File tempOutputDir = Files.createTempDirectory("tempOutput").toFile();
+
+        // Write some content to the source file
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter(tempSourceFile))) {
+            writer.write("Hello, World!");
+        }
+
+        // Set file paths for testing
+        String sourceFilePath = tempSourceFile.getAbsolutePath();
+        String zipFilePath = tempZipFile.getAbsolutePath();
+        String outputDirPath = tempOutputDir.getAbsolutePath();
+
+        // Mock the behavior of FileInputStream and FileOutputStream
+        whenNew(FileInputStream.class).withAnyArguments().thenReturn(mockFileInputStream);
+        whenNew(FileOutputStream.class).withAnyArguments().thenReturn(mockFileOutputStream);
+        whenNew(ZipInputStream.class).withAnyArguments().thenReturn(mockZipInputStream);
+        whenNew(ZipOutputStream.class).withAnyArguments().thenReturn(mockZipOutputStream);
+
+        // Mock the behavior of ZipInputStream for extraction
+        ZipEntry mockZipEntry = mock(ZipEntry.class);
+        when(mockZipEntry.getName()).thenReturn(tempSourceFile.getName());
+        when(mockZipEntry.isDirectory()).thenReturn(false);
+        when(mockZipInputStream.getNextEntry()).thenReturn(mockZipEntry, (ZipEntry) null);
+        when(mockZipInputStream.read(any(byte[].class))).thenAnswer(invocation -> {
+            byte[] buffer = invocation.getArgument(0);
+            System.arraycopy("Hello, World!".getBytes(), 0, buffer, 0, "Hello, World!".length());
+            return "Hello, World!".length();
+        });
+    }
+
+    @Test
+    void testIntegrationComponentAAndComponentB() throws IOException {
+        String sourceFilePath = "src/test/resources/tempSource.txt";
+        String zipFilePath = "src/test/resources/tempZip.zip";
+        String outputDirPath = "src/test/resources/tempOutput";
+
+        // Create temporary files for testing
+        File tempSourceFile = File.createTempFile("tempSource", ".txt");
+        File tempZipFile = File.createTempFile("tempZip", ".zip");
+        File tempOutputDir = Files.createTempDirectory("tempOutput").toFile();
+
+        // Write some content to the source file
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter(tempSourceFile))) {
+            writer.write("Hello, World!");
+        }
+
+        // Set file paths for testing
+        sourceFilePath = tempSourceFile.getAbsolutePath();
+        zipFilePath = tempZipFile.getAbsolutePath();
+        outputDirPath = tempOutputDir.getAbsolutePath();
+
+        // Compress the file using ComponentA
+        componentA.compressFile(sourceFilePath, zipFilePath);
+
+        // Extract the ZIP file using ComponentB
+        componentB.extractZipFile(zipFilePath, outputDirPath);
+
+        // Verify the extracted file using ComponentB
+        String extractedFilePath = outputDirPath + "/" + tempSourceFile.getName();
+        boolean isVerified = componentB.verifyExtractedFile(sourceFilePath, extractedFilePath);
+
+        // Validate that the extracted file matches the original file
+        assertTrue(isVerified);
+    }
+
+    @Test
+    void testErrorHandlingComponentA() {
+        String sourceFilePath = "src/test/resources/nonexistent.txt";
+        String zipFilePath = "src/test/resources/tempZip.zip";
+
+        Exception exception = assertThrows(FileNotFoundException.class, () -> {
+            componentA.compressFile(sourceFilePath, zipFilePath);
+        });
+
+        // Validate the exception message
+        assertEquals("src/test/resources/nonexistent.txt (The system cannot find the file specified)", exception.getMessage());
+    }
+
+    @Test
+    void testErrorHandlingComponentB() {
+        String zipFilePath = "src/test/resources/nonexistent.zip";
+        String outputDirPath = "src/test/resources/tempOutput";
+
+        Exception extractException = assertThrows(FileNotFoundException.class, () -> {
+            componentB.extractZipFile(zipFilePath, outputDirPath);
+        });
+
+        // Validate the exception message
+        assertEquals("src/test/resources/nonexistent.zip (The system cannot find the file specified)", extractException.getMessage());
+
+        // Create a temporary ZIP file for testing
+        File tempZipFile = File.createTempFile("tempZip", ".zip");
+        zipFilePath = tempZipFile.getAbsolutePath();
+
+        Exception verifyException = assertThrows(IOException.class, () -> {
+            componentB.verifyExtractedFile("src/test/resources/nonexistent.txt", "src/test/resources/tempOutput/nonexistent.txt");
+        });
+
+        // Validate the exception message
+        assertEquals("src/test/resources/nonexistent.txt (The system cannot find the file specified)", verifyException.getMessage());
+    }
+}

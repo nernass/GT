@@ -1,0 +1,46 @@
+```java
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
+import java.io.IOException;
+import java.net.http.HttpClient;
+import java.net.http.HttpResponse;
+
+public class ComponentIntegrationTest {
+
+    private ComponentA componentA;
+    private ComponentB componentB;
+
+    @BeforeEach
+    void setUp() {
+        componentA = new ComponentA();
+        componentB = new ComponentB();
+    }
+
+    @Test
+    void createAndVerifyResource_Success() throws Exception {
+        String resourceData = "{\"title\": \"test\", \"body\": \"content\", \"userId\": 1}";
+        String postResponse = componentA.createResource(resourceData);
+        String id = extractId(postResponse);
+        String fetchedData = componentB.fetchResource(id);
+        assertTrue(componentB.verifyResourceDetails(fetchedData, postResponse));
+    }
+
+    @Test
+    void fetchInvalidResource_VerificationFails() throws Exception {
+        String fetchedData = componentB.fetchResource("invalid_id_999");
+        assertFalse(componentB.verifyResourceDetails(fetchedData, "{}"));
+    }
+
+    @Test
+    void createResource_InvalidInput_ThrowsException() {
+        assertThrows(IOException.class, () ->
+            componentA.createResource("invalid_json")
+        );
+    }
+
+    private String extractId(String jsonResponse) {
+        return jsonResponse.split("\"id\":")[1].split(",")[0].trim();
+    }
+}
+```

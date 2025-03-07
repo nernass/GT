@@ -1,0 +1,104 @@
+
+import static org.junit.jupiter.api.Assertions.*;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
+public class IntegrationTest {
+
+    private ComponentA componentA;
+    private ComponentB componentB;
+
+    @BeforeEach
+    void setUp() {
+        componentA = new ComponentA();
+        componentB = new ComponentB();
+    }
+
+    @Test
+    void testIntegrationComponentAAndComponentB() {
+        // Valid input data
+        String username = "user123";
+        String email = "user@example.com";
+        String password = "password123";
+
+        // Validate input using ComponentA
+        boolean isValid = componentA.validateInput(username, email, password);
+        assertTrue(isValid);
+
+        // Save to database using ComponentB
+        boolean isSaved = componentB.saveToDatabase(username, email, password);
+        assertTrue(isSaved);
+
+        // Retrieve the last entry from the database using ComponentB
+        String[] lastEntry = componentB.getLastEntry();
+        assertNotNull(lastEntry);
+        assertEquals(username, lastEntry[0]);
+        assertEquals(email, lastEntry[1]);
+        assertEquals(password, lastEntry[2]);
+    }
+
+    @Test
+    void testInvalidUsernameComponentA() {
+        // Invalid username (too short)
+        String username = "us";
+        String email = "user@example.com";
+        String password = "password123";
+
+        // Validate input using ComponentA
+        boolean isValid = componentA.validateInput(username, email, password);
+        assertFalse(isValid);
+    }
+
+    @Test
+    void testInvalidEmailComponentA() {
+        // Invalid email (missing '@')
+        String username = "user123";
+        String email = "userexample.com";
+        String password = "password123";
+
+        // Validate input using ComponentA
+        boolean isValid = componentA.validateInput(username, email, password);
+        assertFalse(isValid);
+    }
+
+    @Test
+    void testInvalidPasswordComponentA() {
+        // Invalid password (too short)
+        String username = "user123";
+        String email = "user@example.com";
+        String password = "pass";
+
+        // Validate input using ComponentA
+        boolean isValid = componentA.validateInput(username, email, password);
+        assertFalse(isValid);
+    }
+
+    @Test
+    void testNullInputComponentA() {
+        // Null input
+        String username = null;
+        String email = null;
+        String password = null;
+
+        // Validate input using ComponentA
+        boolean isValid = componentA.validateInput(username, email, password);
+        assertFalse(isValid);
+    }
+
+    @Test
+    void testSaveToDatabaseWithInvalidDataComponentB() {
+        // Invalid data (null values)
+        String username = null;
+        String email = null;
+        String password = null;
+
+        // Save to database using ComponentB
+        boolean isSaved = componentB.saveToDatabase(username, email, password);
+        assertFalse(isSaved);
+
+        // Ensure no entry is added to the database
+        String[] lastEntry = componentB.getLastEntry();
+        assertNull(lastEntry);
+    }
+}
