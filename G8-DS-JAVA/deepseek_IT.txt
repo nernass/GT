@@ -1,0 +1,71 @@
+```java
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
+import static org.junit.jupiter.api.Assertions.*;
+import java.nio.file.*;
+
+public class ComponentIntegrationTest {
+
+    @TempDir
+    Path tempDir;
+
+    private ComponentA componentA;
+    private ComponentB componentB;
+    private Path originalFile;
+    private Path cloudDir;
+    private Path downloadDir;
+    private final String testFileName = "testfile.txt";
+
+    @BeforeEach
+    void setUp() throws Exception {
+        componentA = new ComponentA();
+        componentB = new ComponentB();
+        
+        originalFile = tempDir.resolve("original.txt");
+        cloudDir = tempDir.resolve("cloud");
+        downloadDir = tempDir.resolve("downloads");
+
+        Files.write(originalFile, "Integration test data".getBytes());
+    }
+
+    @Test
+    void uploadAndDownload_Success() throws Exception {
+        componentA.uploadFile(originalFile.toString(), cloudDir.toString());
+        componentB.downloadFile(cloudDir.toString(), testFileName, downloadDir.toString());
+
+        Path downloadedFile = downloadDir.resolve(testFileName);
+        assertTrue(componentB.verifyDownload(
+            originalFile.toString(), 
+            downloadedFile.toString()
+        ));
+    }
+
+    @Test
+    void downloadFromInvalidCloudDir_ThrowsException() {
+        Path invalidCloudDir = tempDir.resolve("nonexistent_cloud");
+        
+        assertThrows(IOException.class, () ->
+            componentB.downloadFile(
+                invalidCloudDir.toString(),
+                testFileName,
+                downloadDir.toString()
+            )
+        );
+    }
+
+    @Test
+    void verifyDownload_FailsWhenTampered() throws Exception {
+        componentA.uploadFile(originalFile.toString(), cloudDir.toString());
+        componentB.downloadFile(cloudDir.toString(), testFileName, downloadDir.toString());
+        
+        Path downloadedFile = downloadDir.resolve(testFileName);
+        Files.write(downloadedFile, "Corrupted content".getBytes());
+
+        assertFalse(componentB.verifyDownload(
+            originalFile.toString(),
+            downloadedFile.toString()
+        ));
+    }
+}
+```

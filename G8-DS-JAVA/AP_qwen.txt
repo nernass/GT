@@ -1,0 +1,127 @@
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
+
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+
+class IntegrationTest {
+
+    @Mock
+    private Files mockFiles;
+
+    @InjectMocks
+    private ComponentA componentA;
+
+    @InjectMocks
+    private ComponentB componentB;
+
+    @BeforeEach
+    void setUp() {
+        MockitoAnnotations.openMocks(this);
+    }
+
+    @Test
+    void testIntegrationSuccess() throws IOException {
+        // Arrange
+        String sourceFile = "test_input.txt";
+        String cloudDir = "cloud_storage";
+        String downloadDir = "downloaded_files";
+        String fileName = "test_input.txt";
+
+        // Create test input file
+        Path sourcePath = Paths.get(sourceFile);
+        Files.createFile(sourcePath);
+        String content = "Hello, World!";
+        Files.writeString(sourcePath, content);
+
+        // Mock file operations
+        when(mockFiles.exists(any(Path.class))).thenReturn(false).thenReturn(true).thenReturn(false).thenReturn(true);
+        when(mockFiles.createDirectories(any(Path.class))).thenReturn(null);
+        when(mockFiles.copy(any(Path.class), any(Path.class), any(StandardCopyOption.class))).thenReturn(null);
+
+        // Act
+        componentA.uploadFile(sourceFile, cloudDir);
+        componentB.downloadFile(cloudDir, fileName, downloadDir);
+        boolean isVerified = componentB.verifyDownload(sourceFile, Paths.get(downloadDir, fileName).toString());
+
+        // Assert
+        assertTrue(isVerified);
+        verify(mockFiles, times(2)).exists(any(Path.class));
+        verify(mockFiles, times(2)).createDirectories(any(Path.class));
+        verify(mockFiles, times(2)).copy(any(Path.class), any(Path.class), any(StandardCopyOption.class));
+    }
+
+    @Test
+    void testIntegrationFailure() throws IOException {
+        // Arrange
+        String sourceFile = "test_input.txt";
+        String cloudDir = "cloud_storage";
+        String downloadDir = "downloaded_files";
+        String fileName = "test_input.txt";
+
+        // Create test input file
+        Path sourcePath = Paths.get(sourceFile);
+        Files.createFile(sourcePath);
+        String content = "Hello, World!";
+        Files.writeString(sourcePath, content);
+
+        // Mock file operations to throw exceptions
+        when(mockFiles.exists(any(Path.class))).thenReturn(false).thenReturn(true).thenReturn(false).thenReturn(true);
+        when(mockFiles.createDirectories(any(Path.class))).thenReturn(null);
+        when(mockFiles.copy(any(Path.class), any(Path.class), any(StandardCopyOption.class))).thenThrow(new IOException("IO Error"));
+
+        // Act & Assert
+        Exception uploadException = assertThrows(IOException.class, () -> {
+            componentA.uploadFile(sourceFile, cloudDir);
+        });
+        assertEquals("IO Error", uploadException.getMessage());
+
+        Exception downloadException = assertThrows(IOException.class, () -> {
+            componentB.downloadFile(cloudDir, fileName, downloadDir);
+        });
+        assertEquals("IO Error", downloadException.getMessage());
+
+        boolean isVerified = componentB.verifyDownload(sourceFile, Paths.get(downloadDir, fileName).toString());
+        assertFalse(isVerified);
+        verify(mockFiles, times(2)).exists(any(Path.class));
+        verify(mockFiles, times(2)).createDirectories(any(Path.class));
+        verify(mockFiles, times(2)).copy(any(Path.class), any(Path.class), any(StandardCopyOption.class));
+    }
+
+    @Test
+    void testIntegrationEdgeCase() throws IOException {
+        // Arrange
+        String sourceFile = "test_input.txt";
+        String cloudDir = "cloud_storage";
+        String downloadDir = "downloaded_files";
+        String fileName = "test_input.txt";
+
+        // Create empty test input file
+        Path sourcePath = Paths.get(sourceFile);
+        Files.createFile(sourcePath);
+
+        // Mock file operations
+        when(mockFiles.exists(any(Path.class))).thenReturn(false).thenReturn(true).thenReturn(false).thenReturn(true);
+        when(mockFiles.createDirectories(any(Path.class))).thenReturn(null);
+        when(mockFiles.copy(any(Path.class), any(Path.class), any(StandardCopyOption.class))).thenReturn(null);
+
+        // Act
+        componentA.uploadFile(sourceFile, cloudDir);
+        componentB.downloadFile(cloudDir, fileName, downloadDir);
+        boolean isVerified = componentB.verifyDownload(sourceFile, Paths.get(downloadDir, fileName).toString());
+
+        // Assert
+        assertTrue(isVerified);
+        verify(mockFiles, times(2)).exists(any(Path.class));
+        verify(mockFiles, times(2)).createDirectories(any(Path.class));
+        verify(mockFiles, times(2)).copy(any(Path.class), any(Path.class), any(StandardCopyOption.class));
+    }
+}

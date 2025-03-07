@@ -1,0 +1,128 @@
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
+import org.springframework.jdbc.core.JdbcTemplate;
+
+import java.io.BufferedWriter;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+class IntegrationTest {
+
+    @Mock
+    private JdbcTemplate jdbcTemplate;
+
+    @Mock
+    private BufferedWriter mockBufferedWriter;
+
+    @Mock
+    private FileWriter mockFileWriter;
+
+    @InjectMocks
+    private ComponentA componentA;
+
+    @InjectMocks
+    private ComponentB componentB;
+
+    @BeforeEach
+    void setUp() throws IOException {
+        MockitoAnnotations.openMocks(this);
+        when(mockFileWriter.append(anyChar())).thenReturn(mockFileWriter);
+        when(mockBufferedWriter.append(anyChar())).thenReturn(mockBufferedWriter);
+    }
+
+    @Test
+    void testIntegrationSuccess() throws IOException {
+        // Arrange
+        String filePath = "test_report.txt";
+        String expectedReport = "Sales Report:\n---------------------------------\nProduct: Product1, Quantity: 10, Price: 100.0\nProduct: Product2, Quantity: 20, Price: 200.0\n---------------------------------\n";
+
+        // Mock database query for ComponentA
+        List<Map<String, Object>> salesData = Arrays.asList(
+            new HashMap<>(Map.of("product", "Product1", "quantity", 10, "price", 100.0)),
+            new HashMap<>(Map.of("product", "Product2", "quantity", 20, "price", 200.0))
+        );
+        when(jdbcTemplate.queryForList(anyString())).thenReturn(salesData);
+
+        // Mock file operations for ComponentB
+        whenNew(BufferedWriter.class).withArguments(mockFileWriter).thenReturn(mockBufferedWriter);
+        whenNew(FileWriter.class).withArguments(filePath).thenReturn(mockFileWriter);
+
+        // Act
+        String report = componentA.generateReport();
+        componentB.saveReportToFile(report, filePath);
+        boolean isVerified = componentB.verifyReportContent(filePath, expectedReport);
+
+        // Assert
+        assertTrue(isVerified);
+        verify(jdbcTemplate).queryForList(anyString());
+        verify(mockBufferedWriter).write(report);
+    }
+
+    @Test
+    void testIntegrationFailure() throws IOException {
+        // Arrange
+        String filePath = "test_report.txt";
+        String expectedReport = "Sales Report:\n---------------------------------\nProduct: Product1, Quantity: 10, Price: 100.0\nProduct: Product2, Quantity: 20, Price: 200.0\n---------------------------------\n";
+
+        // Mock database query for ComponentA
+        List<Map<String, Object>> salesData = Arrays.asList(
+            new HashMap<>(Map.of("product", "Product1", "quantity", 10, "price", 100.0)),
+            new HashMap<>(Map.of("product", "Product2", "quantity", 20, "price", 200.0))
+        );
+        when(jdbcTemplate.queryForList(anyString())).thenReturn(salesData);
+
+        // Mock file operations for ComponentB to throw an exception
+        whenNew(BufferedWriter.class).withArguments(mockFileWriter).thenReturn(mockBufferedWriter);
+        whenNew(FileWriter.class).withArguments(filePath).thenReturn(mockFileWriter);
+        doThrow(new IOException("IO Error")).when(mockBufferedWriter).write(anyString());
+
+        // Act & Assert
+        String report = componentA.generateReport();
+        Exception saveException = assertThrows(IOException.class, () -> {
+            componentB.saveReportToFile(report, filePath);
+        });
+        assertEquals("IO Error", saveException.getMessage());
+
+        boolean isVerified = componentB.verifyReportContent(filePath, expectedReport);
+        assertFalse(isVerified);
+        verify(jdbcTemplate).queryForList(anyString());
+        verify(mockBufferedWriter).write(report);
+    }
+
+    @Test
+    void testIntegrationEdgeCase() throws IOException {
+        // Arrange
+        String filePath = "test_report.txt";
+        String expectedReport = "Sales Report:\n---------------------------------\n---------------------------------\n";
+
+        // Mock database query for ComponentA to return empty data
+        List<Map<String, Object>> salesData = Arrays.asList();
+        when(jdbcTemplate.queryForList(anyString())).thenReturn(salesData);
+
+        // Mock file operations for ComponentB
+        whenNew(BufferedWriter.class).withArguments(mockFileWriter).thenReturn(mockBufferedWriter);
+        whenNew(FileWriter.class).withArguments(filePath).thenReturn(mockFileWriter);
+
+        // Act
+        String report = componentA.generateReport();
+        componentB.saveReportToFile(report, filePath);
+        boolean isVerified = componentB.verifyReportContent(filePath, expectedReport);
+
+        // Assert
+        assertTrue(isVerified);
+        verify(jdbcTemplate).queryForList(anyString());
+        verify(mockBufferedWriter).write(report);
+    }
+}

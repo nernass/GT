@@ -1,0 +1,101 @@
+
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
+import org.springframework.jdbc.core.JdbcTemplate;
+
+import javax.sql.DataSource;
+
+class IntegrationTest {
+
+    private ComponentA componentA;
+    private ComponentB componentB;
+
+    @Mock
+    private DataSource dataSource;
+    @Mock
+    private JdbcTemplate jdbcTemplate;
+
+    @BeforeEach
+    void setUp() {
+        MockitoAnnotations.openMocks(this);
+        componentA = new ComponentA(dataSource);
+        componentB = new ComponentB(dataSource);
+
+        // Inject the mocked JdbcTemplate into ComponentA and ComponentB
+        componentA.jdbcTemplate = jdbcTemplate;
+        componentB.jdbcTemplate = jdbcTemplate;
+    }
+
+    @Test
+    void testIntegrationComponentAAndComponentB() throws IllegalArgumentException {
+        int userId = 1;
+        double initialBalance = 100.0;
+        double paymentAmount = 50.0;
+        double expectedBalance = 50.0;
+
+        // Mock the behavior of the JdbcTemplate for checking balance
+        when(jdbcTemplate.queryForObject(eq("SELECT balance FROM users WHERE id = ?"), eq(Double.class), eq(userId)))
+            .thenReturn(initialBalance);
+
+        // Process the payment using ComponentA
+        componentA.processPayment(userId, paymentAmount);
+
+        // Verify the balance using ComponentB
+        boolean isVerified = componentB.verifyBalance(userId, expectedBalance);
+
+        // Validate that the balance is updated correctly
+        assertTrue(isVerified);
+    }
+
+    @Test
+    void testInsufficientBalanceComponentA() {
+        int userId = 1;
+        double initialBalance = 100.0;
+        double paymentAmount = 150.0;
+
+        // Mock the behavior of the JdbcTemplate for checking balance
+        when(jdbcTemplate.queryForObject(eq("SELECT balance FROM users WHERE id = ?"), eq(Double.class), eq(userId)))
+            .thenReturn(initialBalance);
+
+        // Process the payment using ComponentA and expect an exception
+        Exception exception = assertThrows(IllegalArgumentException.class, () -> {
+            componentA.processPayment(userId, paymentAmount);
+        });
+
+        // Validate the exception message
+        assertEquals("Insufficient balance", exception.getMessage());
+    }
+
+    @Test
+    void testErrorHandlingComponentB() {
+        int userId = 1;
+        double expectedBalance = 100.0;
+
+        // Mock the behavior of the JdbcTemplate for fetching balance
+        when(jdbcTemplate.queryForObject(eq("SELECT balance FROM users WHERE id = ?"), eq(Double.class), eq(userId)))
+            .thenThrow(new RuntimeException("Database error"));
+
+        // Fetch the balance using ComponentB and expect an exception
+        Exception exception = assertThrows(RuntimeException.class, () -> {
+            componentB.getUserBalance(userId);
+        });
+
+        // Validate the exception message
+        assertEquals("Database error", exception.getMessage());
+
+        // Mock a scenario where the balance does not match the expected balance
+        when(jdbcTemplate.queryForObject(eq("SELECT balance FROM users WHERE id = ?"), eq(Double.class), eq(userId)))
+            .thenReturn(50.0);
+
+        // Verify the balance using ComponentB
+        boolean isVerified = componentB.verifyBalance(userId, expectedBalance);
+
+        // Validate that the balance does not match the expected balance
+        assertFalse(isVerified);
+    }
+}

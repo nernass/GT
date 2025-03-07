@@ -1,0 +1,52 @@
+import static org.junit.jupiter.api.Assertions.*;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
+import java.io.IOException;
+import java.nio.file.Path;
+
+class ComponentIntegrationTest {
+
+    @TempDir
+    Path tempDir;
+
+    @Test
+    void successFlow_AppendAndVerifyLastLine() throws IOException {
+        Path logFile = tempDir.resolve("log.txt");
+        ComponentA componentA = new ComponentA();
+        ComponentB componentB = new ComponentB();
+
+        String data = "integration test data";
+        componentA.appendToLogFile(logFile.toString(), data);
+        assertTrue(componentB.verifyLastLine(logFile.toString(), data));
+    }
+
+    @Test
+    void invalidLogPath_AppendFails() {
+        ComponentA componentA = new ComponentA();
+        Path invalidPath = tempDir.resolve("invalid_dir/log.txt");
+        
+        assertThrows(IOException.class, () -> 
+            componentA.appendToLogFile(invalidPath.toString(), "data")
+        );
+    }
+
+    @Test
+    void emptyData_AppendAndVerify() throws IOException {
+        Path logFile = tempDir.resolve("empty.log");
+        ComponentA componentA = new ComponentA();
+        ComponentB componentB = new ComponentB();
+
+        componentA.appendToLogFile(logFile.toString(), "");
+        assertTrue(componentB.verifyLastLine(logFile.toString(), ""));
+    }
+
+    @Test
+    void missingFile_ReadFails() {
+        ComponentB componentB = new ComponentB();
+        Path missingFile = tempDir.resolve("missing.log");
+        
+        assertThrows(IOException.class, () -> 
+            componentB.readLastLine(missingFile.toString())
+        );
+    }
+}

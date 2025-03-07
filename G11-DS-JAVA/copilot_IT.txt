@@ -1,0 +1,122 @@
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
+
+import org.springframework.jdbc.core.JdbcTemplate;
+import javax.sql.DataSource;
+
+public class IntegrationTest {
+
+    private ComponentA componentA;
+    private ComponentB componentB;
+    private DataSource dataSource; // Placeholder for DataSource setup
+
+    @BeforeEach
+    public void setUp() {
+        // Placeholder for DataSource configuration and initialization
+        // dataSource = ...; // Initialize mock or actual DataSource
+
+        componentA = new ComponentA(dataSource);
+        componentB = new ComponentB(dataSource);
+
+        // Placeholder for initial database setup
+        // e.g., insertTestUser(userId, initialBalance);
+    }
+
+    @Test
+    public void testProcessPaymentWithSufficientBalance() {
+        int userId = 1;
+        double initialBalance = 100.0;
+        double paymentAmount = 50.0;
+        double expectedBalance = initialBalance - paymentAmount;
+
+        // Placeholder for setting up initial user balance
+        // e.g., setUserBalance(userId, initialBalance);
+
+        // Process the payment
+        componentA.processPayment(userId, paymentAmount);
+
+        // Verify the user's balance
+        double actualBalance = componentB.getUserBalance(userId);
+        assertEquals(expectedBalance, actualBalance);
+
+        // Verify balance using ComponentB's method
+        assertTrue(componentB.verifyBalance(userId, expectedBalance));
+    }
+
+    @Test
+    public void testProcessPaymentWithInsufficientBalance() {
+        int userId = 2;
+        double initialBalance = 30.0;
+        double paymentAmount = 50.0;
+
+        // Placeholder for setting up initial user balance
+        // e.g., setUserBalance(userId, initialBalance);
+
+        // Expect an exception due to insufficient balance
+        assertThrows(IllegalArgumentException.class, () -> {
+            componentA.processPayment(userId, paymentAmount);
+        });
+
+        // Verify that the balance remains unchanged
+        double actualBalance = componentB.getUserBalance(userId);
+        assertEquals(initialBalance, actualBalance);
+    }
+
+    @Test
+    public void testVerifyBalanceWithCorrectBalance() {
+        int userId = 3;
+        double expectedBalance = 75.0;
+
+        // Placeholder for setting up user balance
+        // e.g., setUserBalance(userId, expectedBalance);
+
+        // Verify balance using ComponentB's method
+        assertTrue(componentB.verifyBalance(userId, expectedBalance));
+    }
+
+    @Test
+    public void testVerifyBalanceWithIncorrectBalance() {
+        int userId = 4;
+        double actualBalance = 50.0;
+        double incorrectExpectedBalance = 40.0;
+
+        // Placeholder for setting up user balance
+        // e.g., setUserBalance(userId, actualBalance);
+
+        // Verify balance using ComponentB's method
+        assertFalse(componentB.verifyBalance(userId, incorrectExpectedBalance));
+    }
+
+    @Test
+    public void testGetUserBalanceForNonExistentUser() {
+        int nonExistentUserId = 9999;
+
+        // Expect an exception when retrieving balance for a non-existent user
+        assertThrows(Exception.class, () -> {
+            componentB.getUserBalance(nonExistentUserId);
+        });
+    }
+
+    @Test
+    public void testProcessPaymentWithNegativeAmount() {
+        int userId = 1;
+        double paymentAmount = -20.0;
+
+        // Expect an exception due to negative payment amount
+        assertThrows(IllegalArgumentException.class, () -> {
+            componentA.processPayment(userId, paymentAmount);
+        });
+    }
+
+    @Test
+    public void testProcessPaymentWithInvalidUserId() {
+        int invalidUserId = -1;
+        double paymentAmount = 50.0;
+
+        // Expect an exception due to invalid user ID
+        assertThrows(Exception.class, () -> {
+            componentA.processPayment(invalidUserId, paymentAmount);
+        });
+    }
+}

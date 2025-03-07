@@ -1,0 +1,76 @@
+```java
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
+import org.mockito.Mockito;
+import javax.sql.DataSource;
+import java.nio.file.Path;
+import java.util.List;
+import java.util.Map;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.when;
+
+public class ComponentIntegrationTest {
+
+    private ComponentA componentA;
+    private ComponentB componentB;
+    private JdbcTemplate mockedJdbcTemplate;
+
+    @TempDir
+    Path tempDir;
+
+    @BeforeEach
+    void setUp() {
+        DataSource mockDataSource = Mockito.mock(DataSource.class);
+        mockedJdbcTemplate = Mockito.mock(JdbcTemplate.class);
+        componentA = new ComponentA(mockDataSource) {
+            {
+                this.jdbcTemplate = mockedJdbcTemplate;
+            }
+        };
+        componentB = new ComponentB();
+    }
+
+    @Test
+    void generateAndSaveReport_Success() throws Exception {
+        // Mock database response
+        List<Map<String, Object>> mockData = List.of(
+            Map.of("product", "Widget", "quantity", 5, "price", 29.99),
+            Map.of("product", "Gadget", "quantity", 3, "price", 49.95)
+        );
+        when(mockedJdbcTemplate.queryForList(anyString())).thenReturn(mockData);
+
+        // Generate and save report
+        String report = componentA.generateReport();
+        Path reportFile = tempDir.resolve("report.txt");
+        componentB.saveReportToFile(report, reportFile.toString());
+
+        // Verify content
+        assertTrue(componentB.verifyReportContent(reportFile.toString(), report));
+    }
+
+    @Test
+    void saveReport_InvalidPath_ThrowsException() {
+        Path invalidPath = tempDir.resolve("invalid_folder/report.txt");
+        String report = "Test Report Content";
+        
+        assertThrows(IOException.class, () ->
+            componentB.saveReportToFile(report, invalidPath.toString())
+        );
+    }
+
+    @Test
+    void verifyReport_FailsWhenTampered() throws Exception {
+        when(mockedJdbcTemplate.queryForList(anyString())).thenReturn(List.of());
+        String originalReport = componentA.generateReport();
+        Path reportFile = tempDir.resolve("report.txt");
+        componentB.saveReportToFile(originalReport, reportFile.toString());
+        
+        // Tamper file
+        componentB.saveReportToFile("Corrupted Data", reportFile.toString());
+        
+        assertFalse(componentB.verifyReportContent(reportFile.toString(), originalReport));
+    }
+}
+```

@@ -1,0 +1,41 @@
+```java
+import static org.junit.jupiter.api.Assertions.*;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
+import java.io.IOException;
+import java.nio.file.Path;
+
+public class IntegrationTest {
+
+    private ComponentA componentA;
+    private ComponentB componentB;
+
+    @BeforeEach
+    public void setUp() {
+        componentA = new ComponentA();
+        componentB = new ComponentB();
+    }
+
+    @Test
+    public void testAppendAndVerify(@TempDir Path tempDir) throws IOException {
+        Path logFile = tempDir.resolve("test.log");
+        String firstEntry = "First log entry";
+        String secondEntry = "Second log entry";
+
+        componentA.appendToLogFile(logFile.toString(), firstEntry);
+        componentA.appendToLogFile(logFile.toString(), secondEntry);
+
+        boolean verified = componentB.verifyLastLine(logFile.toString(), secondEntry);
+        assertTrue(verified);
+    }
+
+    @Test
+    public void testReadLastLineErrorHandling(@TempDir Path tempDir) {
+        Path nonExistentFile = tempDir.resolve("nonexistent.log");
+        assertThrows(IOException.class, () -> {
+            componentB.readLastLine(nonExistentFile.toString());
+        });
+    }
+}
+```

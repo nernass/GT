@@ -1,0 +1,95 @@
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
+import org.springframework.jdbc.core.JdbcTemplate;
+
+public class IntegrationTest {
+
+    @Mock
+    private JdbcTemplate jdbcTemplate;
+
+    @InjectMocks
+    private ComponentA componentA;
+
+    @InjectMocks
+    private ComponentB componentB;
+
+    @BeforeEach
+    void setUp() {
+        MockitoAnnotations.openMocks(this);
+    }
+
+    @Test
+    void testIntegrationSuccess() {
+        // Arrange
+        int userId = 1;
+        double initialBalance = 200.0;
+        double paymentAmount = 100.0;
+        double expectedBalance = 100.0;
+
+        // Mock database queries and updates
+        when(jdbcTemplate.queryForObject("SELECT balance FROM users WHERE id = ?", Double.class, userId)).thenReturn(initialBalance);
+        doNothing().when(jdbcTemplate).update("UPDATE users SET balance = balance - ? WHERE id = ?", paymentAmount, userId);
+
+        // Act
+        componentA.processPayment(userId, paymentAmount);
+        boolean isVerified = componentB.verifyBalance(userId, expectedBalance);
+
+        // Assert
+        assertTrue(isVerified);
+        verify(jdbcTemplate).queryForObject("SELECT balance FROM users WHERE id = ?", Double.class, userId);
+        verify(jdbcTemplate).update("UPDATE users SET balance = balance - ? WHERE id = ?", paymentAmount, userId);
+    }
+
+    @Test
+    void testIntegrationFailure() {
+        // Arrange
+        int userId = 1;
+        double initialBalance = 100.0;
+        double paymentAmount = 150.0;
+
+        // Mock database query to return initial balance
+        when(jdbcTemplate.queryForObject("SELECT balance FROM users WHERE id = ?", Double.class, userId)).thenReturn(initialBalance);
+
+        // Act & Assert
+        Exception exception = assertThrows(IllegalArgumentException.class, () -> {
+            componentA.processPayment(userId, paymentAmount);
+        });
+        assertEquals("Insufficient balance", exception.getMessage());
+
+        // Verify no update was made
+        verify(jdbcTemplate).queryForObject("SELECT balance FROM users WHERE id = ?", Double.class, userId);
+        verify(jdbcTemplate, never()).update("UPDATE users SET balance = balance - ? WHERE id = ?", paymentAmount, userId);
+
+        // Verify balance remains unchanged
+        boolean isVerified = componentB.verifyBalance(userId, initialBalance);
+        assertTrue(isVerified);
+    }
+
+    @Test
+    void testIntegrationEdgeCase() {
+        // Arrange
+        int userId = 1;
+        double initialBalance = 0.0;
+        double paymentAmount = 0.0;
+        double expectedBalance = 0.0;
+
+        // Mock database queries and updates
+        when(jdbcTemplate.queryForObject("SELECT balance FROM users WHERE id = ?", Double.class, userId)).thenReturn(initialBalance);
+        doNothing().when(jdbcTemplate).update("UPDATE users SET balance = balance - ? WHERE id = ?", paymentAmount, userId);
+
+        // Act
+        componentA.processPayment(userId, paymentAmount);
+        boolean isVerified = componentB.verifyBalance(userId, expectedBalance);
+
+        // Assert
+        assertTrue(isVerified);
+        verify(jdbcTemplate).queryForObject("SELECT balance FROM users WHERE id = ?", Double.class, userId);
+        verify(jdbcTemplate).update("UPDATE users SET balance = balance - ? WHERE id = ?", paymentAmount, userId);
+    }
+}

@@ -1,0 +1,113 @@
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
+
+import java.io.IOException;
+import java.nio.file.*;
+
+public class IntegrationTest {
+
+    private ComponentA componentA;
+    private ComponentB componentB;
+
+    @BeforeEach
+    public void setUp() {
+        // Placeholders for required setup
+        componentA = new ComponentA();
+        componentB = new ComponentB();
+
+        // Placeholders for creating test directories and files
+        // e.g., createTestDirectories(), createTestFiles();
+    }
+
+    @Test
+    public void testIntegration_UploadAndDownload() throws IOException {
+        // Placeholder paths for testing
+        String sourceFile = "path/to/sourceFile.txt";
+        String cloudDir = "path/to/cloudDir";
+        String downloadDir = "path/to/downloadDir";
+        String fileName = "sourceFile.txt";
+        String downloadedFile = Paths.get(downloadDir, fileName).toString();
+
+        // Placeholder for creating a source file
+        // e.g., createTestFile(sourceFile);
+
+        // Use ComponentA to upload the file
+        componentA.uploadFile(sourceFile, cloudDir);
+
+        // Use ComponentB to download the file
+        componentB.downloadFile(cloudDir, fileName, downloadDir);
+
+        // Use ComponentB to verify the downloaded file
+        boolean isVerified = componentB.verifyDownload(sourceFile, downloadedFile);
+        assertTrue(isVerified);
+    }
+
+    @Test
+    public void testErrorHandling_UploadNonexistentFile() {
+        String nonexistentFile = "path/to/nonexistentFile.txt";
+        String cloudDir = "path/to/cloudDir";
+
+        assertThrows(IOException.class, () -> {
+            componentA.uploadFile(nonexistentFile, cloudDir);
+        });
+    }
+
+    @Test
+    public void testErrorHandling_DownloadNonexistentFile() {
+        String cloudDir = "path/to/cloudDir";
+        String nonexistentFileName = "nonexistentFile.txt";
+        String downloadDir = "path/to/downloadDir";
+
+        assertThrows(IOException.class, () -> {
+            componentB.downloadFile(cloudDir, nonexistentFileName, downloadDir);
+        });
+    }
+
+    @Test
+    public void testErrorHandling_UploadFile_NullParameters() {
+        String sourceFile = "path/to/sourceFile.txt";
+        String cloudDir = "path/to/cloudDir";
+
+        assertThrows(NullPointerException.class, () -> {
+            componentA.uploadFile(null, cloudDir);
+        });
+
+        assertThrows(NullPointerException.class, () -> {
+            componentA.uploadFile(sourceFile, null);
+        });
+    }
+
+    @Test
+    public void testErrorHandling_DownloadFile_NullParameters() {
+        String cloudDir = "path/to/cloudDir";
+        String fileName = "sourceFile.txt";
+        String downloadDir = "path/to/downloadDir";
+
+        assertThrows(NullPointerException.class, () -> {
+            componentB.downloadFile(null, fileName, downloadDir);
+        });
+
+        assertThrows(NullPointerException.class, () -> {
+            componentB.downloadFile(cloudDir, null, downloadDir);
+        });
+
+        assertThrows(NullPointerException.class, () -> {
+            componentB.downloadFile(cloudDir, fileName, null);
+        });
+    }
+
+    @Test
+    public void testVerifyDownload_FileMismatch() throws IOException {
+        String originalFile = "path/to/originalFile.txt";
+        String differentFile = "path/to/differentFile.txt";
+
+        // Placeholder for creating files with different content
+        // e.g., createTestFile(originalFile, "Original content");
+        // e.g., createTestFile(differentFile, "Different content");
+
+        // Verify that the files do not match
+        boolean isVerified = componentB.verifyDownload(originalFile, differentFile);
+        assertFalse(isVerified);
+    }
+}

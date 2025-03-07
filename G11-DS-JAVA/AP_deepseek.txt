@@ -1,0 +1,51 @@
+import static org.junit.jupiter.api.Assertions.*;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.datasource.embedded.EmbeddedDatabaseBuilder;
+import org.springframework.jdbc.datasource.embedded.EmbeddedDatabaseType;
+import javax.sql.DataSource;
+
+class ComponentIntegrationTest {
+
+    private ComponentA componentA;
+    private ComponentB componentB;
+    private DataSource dataSource;
+
+    @BeforeEach
+    void setup() {
+        dataSource = new EmbeddedDatabaseBuilder()
+            .setType(EmbeddedDatabaseType.H2)
+            .addScript("CREATE TABLE users (id INT PRIMARY KEY, balance DECIMAL(10,2))")
+            .addScript("INSERT INTO users (id, balance) VALUES (1, 100.00)")
+            .build();
+        componentA = new ComponentA(dataSource);
+        componentB = new ComponentB(dataSource);
+    }
+
+    @Test
+    void successFlow_ValidPaymentUpdatesBalance() {
+        componentA.processPayment(1, 50.00);
+        assertTrue(componentB.verifyBalance(1, 50.00));
+    }
+
+    @Test
+    void insufficientBalance_ThrowsException() {
+        assertThrows(IllegalArgumentException.class, () -> 
+            componentA.processPayment(1, 150.00)
+        );
+        assertTrue(componentB.verifyBalance(1, 100.00));
+    }
+
+    @Test
+    void edgeCase_ZeroAmountNoChange() {
+        componentA.processPayment(1, 0.00);
+        assertTrue(componentB.verifyBalance(1, 100.00));
+    }
+
+    @Test
+    void edgeCase_FullBalanceDeduction() {
+        componentA.processPayment(1, 100.00);
+        assertTrue(componentB.verifyBalance(1, 0.00));
+    }
+}

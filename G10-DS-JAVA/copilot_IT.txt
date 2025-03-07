@@ -1,0 +1,93 @@
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
+
+import org.springframework.jdbc.core.JdbcTemplate;
+import javax.sql.DataSource;
+
+import java.io.IOException;
+
+public class IntegrationTest {
+
+    private ComponentA componentA;
+    private ComponentB componentB;
+    private DataSource dataSource; // Placeholder for DataSource setup
+    private String filePath; // Placeholder for file path
+
+    @BeforeEach
+    public void setUp() {
+        // Placeholder for required setup (e.g., DataSource configuration, mock dependencies)
+        // dataSource = ...; // Initialize mock or real DataSource
+        componentA = new ComponentA(dataSource);
+        componentB = new ComponentB();
+
+        // filePath = ...; // Initialize file path for saving the report
+    }
+
+    @Test
+    public void testIntegration_GenerateAndSaveReport() throws IOException {
+        // Generate report using ComponentA
+        String report = componentA.generateReport();
+
+        // Save report to file using ComponentB
+        componentB.saveReportToFile(report, filePath);
+
+        // Verify that the report was saved correctly
+        boolean isVerified = componentB.verifyReportContent(filePath, report);
+        assertTrue(isVerified);
+    }
+
+    @Test
+    public void testErrorHandling_InvalidFilePath() {
+        // Generate report using ComponentA
+        String report = componentA.generateReport();
+
+        // Try saving to an invalid file path
+        String invalidFilePath = "/invalid/path/report.txt";
+
+        assertThrows(IOException.class, () -> {
+            componentB.saveReportToFile(report, invalidFilePath);
+        });
+    }
+
+    @Test
+    public void testErrorHandling_DatabaseException() {
+        // Simulate a database exception when generating the report
+        // Placeholder for mocking JdbcTemplate to throw an exception during queryForList
+
+        assertThrows(Exception.class, () -> {
+            componentA.generateReport();
+        });
+    }
+
+    @Test
+    public void testErrorHandling_NullReport() {
+        // Try saving a null report
+        assertThrows(NullPointerException.class, () -> {
+            componentB.saveReportToFile(null, filePath);
+        });
+    }
+
+    @Test
+    public void testErrorHandling_NullFilePath() throws IOException {
+        // Generate report using ComponentA
+        String report = componentA.generateReport();
+
+        // Try saving to a null file path
+        assertThrows(NullPointerException.class, () -> {
+            componentB.saveReportToFile(report, null);
+        });
+    }
+
+    @Test
+    public void testErrorHandling_VerifyReportContent_NullParameters() {
+        // Try verifying with null parameters
+        assertThrows(NullPointerException.class, () -> {
+            componentB.verifyReportContent(null, "Expected Report");
+        });
+
+        assertThrows(NullPointerException.class, () -> {
+            componentB.verifyReportContent(filePath, null);
+        });
+    }
+}

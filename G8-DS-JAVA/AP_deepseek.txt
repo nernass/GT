@@ -1,0 +1,82 @@
+import static org.junit.jupiter.api.Assertions.*;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+
+class ComponentIntegrationTest {
+
+    @TempDir
+    Path tempDir;
+
+    @Test
+    void successFlow_UploadDownloadVerify() throws IOException {
+        // Setup source file
+        Path sourceFile = tempDir.resolve("source.txt");
+        Files.writeString(sourceFile, "Test Content");
+        
+        ComponentA componentA = new ComponentA();
+        ComponentB componentB = new ComponentB();
+        
+        Path cloudDir = tempDir.resolve("cloud");
+        Path downloadDir = tempDir.resolve("download");
+        
+        // Upload and download
+        componentA.uploadFile(sourceFile.toString(), cloudDir.toString());
+        componentB.downloadFile(cloudDir.toString(), sourceFile.getFileName().toString(), downloadDir.toString());
+        
+        // Verify content
+        Path downloadedFile = downloadDir.resolve(sourceFile.getFileName());
+        assertTrue(componentB.verifyDownload(sourceFile.toString(), downloadedFile.toString()));
+    }
+
+    @Test
+    void downloadNonExistentFile_ThrowsException() throws IOException {
+        Path sourceFile = tempDir.resolve("valid.txt");
+        Files.writeString(sourceFile, "Data");
+        
+        ComponentA componentA = new ComponentA();
+        ComponentB componentB = new ComponentB();
+        
+        Path cloudDir = tempDir.resolve("cloud");
+        componentA.uploadFile(sourceFile.toString(), cloudDir.toString());
+        
+        // Attempt to download invalid file
+        assertThrows(IOException.class, () -> 
+            componentB.downloadFile(cloudDir.toString(), "invalid.txt", tempDir.resolve("download").toString())
+        );
+    }
+
+    @Test
+    void invalidSourceFile_UploadFails() {
+        ComponentA componentA = new ComponentA();
+        Path invalidSource = tempDir.resolve("non_existent.txt");
+        
+        assertThrows(IOException.class, () -> 
+            componentA.uploadFile(invalidSource.toString(), tempDir.resolve("cloud").toString())
+        );
+        
+        // Verify no file was uploaded
+        Path cloudFile = tempDir.resolve("cloud").resolve("non_existent.txt");
+        assertFalse(Files.exists(cloudFile));
+    }
+
+    @Test
+    void emptyFile_UploadDownloadVerify() throws IOException {
+        Path emptyFile = tempDir.resolve("empty.txt");
+        Files.createFile(emptyFile);
+        
+        ComponentA componentA = new ComponentA();
+        ComponentB componentB = new ComponentB();
+        
+        Path cloudDir = tempDir.resolve("cloud");
+        Path downloadDir = tempDir.resolve("download");
+        
+        componentA.uploadFile(emptyFile.toString(), cloudDir.toString());
+        componentB.downloadFile(cloudDir.toString(), "empty.txt", downloadDir.toString());
+        
+        Path downloadedFile = downloadDir.resolve("empty.txt");
+        assertTrue(componentB.verifyDownload(emptyFile.toString(), downloadedFile.toString()));
+    }
+}

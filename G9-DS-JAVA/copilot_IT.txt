@@ -1,0 +1,98 @@
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
+
+import java.io.IOException;
+import java.nio.file.*;
+
+public class IntegrationTest {
+
+    private ComponentA componentA;
+    private ComponentB componentB;
+    private String logFile;
+
+    @BeforeEach
+    public void setUp() throws IOException {
+        // Initialize components
+        componentA = new ComponentA();
+        componentB = new ComponentB();
+
+        // Create a temporary log file
+        Path tempFile = Files.createTempFile("testLog", ".txt");
+        logFile = tempFile.toString();
+
+        // Ensure the log file is empty at the start of each test
+        Files.newBufferedWriter(tempFile, StandardOpenOption.TRUNCATE_EXISTING).close();
+    }
+
+    @Test
+    public void testIntegration_AppendAndReadLastLine() throws IOException {
+        String data = "Test data line";
+
+        // Append data using ComponentA
+        componentA.appendToLogFile(logFile, data);
+
+        // Read last line using ComponentB
+        String lastLine = componentB.readLastLine(logFile);
+
+        // Verify that the last line matches the data appended
+        assertEquals(data, lastLine);
+    }
+
+    @Test
+    public void testIntegration_VerifyLastLine() throws IOException {
+        String data = "Another test line";
+
+        // Append data using ComponentA
+        componentA.appendToLogFile(logFile, data);
+
+        // Verify the last line using ComponentB
+        boolean isVerified = componentB.verifyLastLine(logFile, data);
+
+        // Assert that the verification is true
+        assertTrue(isVerified);
+    }
+
+    @Test
+    public void testErrorHandling_NonexistentLogFile() {
+        String nonexistentLogFile = "nonexistentLogFile.txt";
+
+        assertThrows(IOException.class, () -> {
+            // Attempt to read from a nonexistent log file
+            componentB.readLastLine(nonexistentLogFile);
+        });
+    }
+
+    @Test
+    public void testErrorHandling_NullParameters_AppendToLogFile() {
+        assertThrows(NullPointerException.class, () -> {
+            componentA.appendToLogFile(null, "Some data");
+        });
+
+        assertThrows(NullPointerException.class, () -> {
+            componentA.appendToLogFile(logFile, null);
+        });
+    }
+
+    @Test
+    public void testErrorHandling_NullParameters_ReadLastLine() {
+        assertThrows(NullPointerException.class, () -> {
+            componentB.readLastLine(null);
+        });
+    }
+
+    @Test
+    public void testErrorHandling_VerifyLastLine_Mismatch() throws IOException {
+        String dataAppended = "Data appended";
+        String dataToVerify = "Different data";
+
+        // Append data using ComponentA
+        componentA.appendToLogFile(logFile, dataAppended);
+
+        // Verify the last line with different data
+        boolean isVerified = componentB.verifyLastLine(logFile, dataToVerify);
+
+        // Assert that the verification is false
+        assertFalse(isVerified);
+    }
+}

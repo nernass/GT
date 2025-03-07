@@ -1,0 +1,115 @@
+
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
+import org.springframework.jdbc.core.JdbcTemplate;
+
+import javax.sql.DataSource;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+class IntegrationTest {
+
+    private ComponentA componentA;
+    private ComponentB componentB;
+
+    @Mock
+    private DataSource dataSource;
+    @Mock
+    private JdbcTemplate jdbcTemplate;
+
+    @BeforeEach
+    void setUp() {
+        MockitoAnnotations.openMocks(this);
+        componentA = new ComponentA(dataSource);
+        componentB = new ComponentB();
+
+        // Inject the mocked JdbcTemplate into ComponentA
+        componentA.jdbcTemplate = jdbcTemplate;
+
+        // Mock the behavior of the JdbcTemplate
+        List<Map<String, Object>> salesData = new ArrayList<>();
+        Map<String, Object> row1 = new HashMap<>();
+        row1.put("product", "Product A");
+        row1.put("quantity", 10);
+        row1.put("price", 20.0);
+        salesData.add(row1);
+
+        Map<String, Object> row2 = new HashMap<>();
+        row2.put("product", "Product B");
+        row2.put("quantity", 5);
+        row2.put("price", 15.0);
+        salesData.add(row2);
+
+        when(jdbcTemplate.queryForList(anyString())).thenReturn(salesData);
+    }
+
+    @Test
+    void testIntegrationComponentAAndComponentB() throws IOException {
+        String expectedReport = "Sales Report:\n" +
+                              "---------------------------------\n" +
+                              "Product: Product A, Quantity: 10, Price: 20.0\n" +
+                              "Product: Product B, Quantity: 5, Price: 15.0\n" +
+                              "---------------------------------\n";
+
+        // Generate the report using ComponentA
+        String report = componentA.generateReport();
+
+        // Save the report to a file using ComponentB
+        String filePath = "test_report.txt";
+        componentB.saveReportToFile(report, filePath);
+
+        // Verify the report content using ComponentB
+        boolean isVerified = componentB.verifyReportContent(filePath, expectedReport);
+
+        // Validate that the report content is correct
+        assertEquals(expectedReport, report);
+        assertTrue(isVerified);
+    }
+
+    @Test
+    void testErrorHandlingComponentA() {
+        // Placeholder for error handling test cases in Component A
+        // Since ComponentA does not throw exceptions directly, we can mock the JdbcTemplate to throw an exception
+        when(jdbcTemplate.queryForList(anyString())).thenThrow(new RuntimeException("Database error"));
+
+        Exception exception = assertThrows(RuntimeException.class, () -> {
+            componentA.generateReport();
+        });
+
+        // Validate the exception message
+        assertEquals("Database error", exception.getMessage());
+    }
+
+    @Test
+    void testErrorHandlingComponentB() throws IOException {
+        String report = "Sample Report";
+        String filePath = "nonexistent_directory/test_report.txt";
+
+        Exception saveException = assertThrows(IOException.class, () -> {
+            componentB.saveReportToFile(report, filePath);
+        });
+
+        // Validate the exception message
+        assertNotNull(saveException.getMessage());
+
+        // Mock a scenario where the file content does not match the expected report
+        String differentReport = "Different Report";
+        String existingFilePath = "test_report.txt";
+        componentB.saveReportToFile(differentReport, existingFilePath);
+
+        Exception verifyException = assertThrows(AssertionError.class, () -> {
+            assertTrue(componentB.verifyReportContent(existingFilePath, report));
+        });
+
+        // Validate the exception message
+        assertNotNull(verifyException.getMessage());
+    }
+}

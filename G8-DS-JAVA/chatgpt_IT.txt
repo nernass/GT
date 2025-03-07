@@ -1,0 +1,57 @@
+```java
+import static org.junit.jupiter.api.Assertions.*;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
+import java.io.IOException;
+import java.nio.file.*;
+import java.util.List;
+
+public class IntegrationTest {
+
+    private ComponentA componentA;
+    private ComponentB componentB;
+
+    @BeforeEach
+    public void setUp() {
+        componentA = new ComponentA();
+        componentB = new ComponentB();
+    }
+
+    @Test
+    public void testUploadDownloadAndVerify(@TempDir Path tempDir) throws IOException {
+        Path originalFile = tempDir.resolve("original.txt");
+        Path cloudDir = tempDir.resolve("cloud");
+        Path downloadDir = tempDir.resolve("download");
+
+        Files.write(originalFile, List.of("Sample file content"));
+
+        componentA.uploadFile(originalFile.toString(), cloudDir.toString());
+        componentB.downloadFile(cloudDir.toString(), originalFile.getFileName().toString(), downloadDir.toString());
+
+        boolean verified = componentB.verifyDownload(originalFile.toString(), downloadDir.resolve(originalFile.getFileName()).toString());
+        assertTrue(verified);
+    }
+
+    @Test
+    public void testUploadFileErrorHandling(@TempDir Path tempDir) {
+        Path nonExistentFile = tempDir.resolve("nonexistent.txt");
+        Path cloudDir = tempDir.resolve("cloud");
+
+        assertThrows(IOException.class, () -> {
+            componentA.uploadFile(nonExistentFile.toString(), cloudDir.toString());
+        });
+    }
+
+    @Test
+    public void testDownloadFileErrorHandling(@TempDir Path tempDir) throws IOException {
+        Path cloudDir = tempDir.resolve("cloud");
+        Path downloadDir = tempDir.resolve("download");
+        Files.createDirectories(cloudDir);
+
+        assertThrows(IOException.class, () -> {
+            componentB.downloadFile(cloudDir.toString(), "nonexistent.txt", downloadDir.toString());
+        });
+    }
+}
+```

@@ -1,0 +1,72 @@
+```java
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
+import javax.sql.DataSource;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.when;
+
+public class ComponentIntegrationTest {
+
+    private ComponentA componentA;
+    private ComponentB componentB;
+    private JdbcTemplate mockedJdbcTemplate;
+
+    @BeforeEach
+    void setUp() {
+        DataSource mockDataSource = Mockito.mock(DataSource.class);
+        mockedJdbcTemplate = Mockito.mock(JdbcTemplate.class);
+        
+        // Inject mocked JdbcTemplate into both components
+        componentA = new ComponentA(mockDataSource) {{
+            this.jdbcTemplate = mockedJdbcTemplate;
+        }};
+        componentB = new ComponentB(mockDataSource) {{
+            this.jdbcTemplate = mockedJdbcTemplate;
+        }};
+    }
+
+    @Test
+    void processPaymentAndVerifyBalance_Success() {
+        int userId = 1;
+        double initialBalance = 100.0;
+        double paymentAmount = 30.0;
+        double expectedBalance = initialBalance - paymentAmount;
+
+        // Mock balance check and update
+        when(mockedJdbcTemplate.queryForObject(anyString(), eq(Double.class), eq(userId))
+            .thenReturn(initialBalance) // Initial balance check
+            .thenReturn(expectedBalance); // Post-payment balance check
+
+        componentA.processPayment(userId, paymentAmount);
+        assertTrue(componentB.verifyBalance(userId, expectedBalance));
+    }
+
+    @Test
+    void processPayment_InsufficientBalance_ThrowsException() {
+        int userId = 2;
+        double initialBalance = 20.0;
+        double paymentAmount = 30.0;
+
+        when(mockedJdbcTemplate.queryForObject(anyString(), eq(Double.class), eq(userId)))
+            .thenReturn(initialBalance);
+
+        assertThrows(IllegalArgumentException.class, () ->
+            componentA.processPayment(userId, paymentAmount)
+        );
+    }
+
+    @Test
+    void verifyBalance_FailsWhenIncorrect() {
+        int userId = 3;
+        double reportedBalance = 50.0;
+        double actualBalance = 40.0;
+
+        when(mockedJdbcTemplate.queryForObject(anyString(), eq(Double.class), eq(userId)))
+            .thenReturn(actualBalance);
+
+        assertFalse(componentB.verifyBalance(userId, reportedBalance));
+    }
+}
+```

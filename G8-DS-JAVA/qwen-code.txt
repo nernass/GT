@@ -1,0 +1,107 @@
+
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
+
+import java.io.IOException;
+import java.nio.file.*;
+import java.util.stream.Stream;
+
+class IntegrationTest {
+
+    private ComponentA componentA;
+    private ComponentB componentB;
+
+    @Mock
+    private FileSystem fileSystem;
+
+    @BeforeEach
+    void setUp() throws IOException {
+        MockitoAnnotations.openMocks(this);
+        componentA = new ComponentA();
+        componentB = new ComponentB();
+
+        // Mock the default file system
+        Path sourceDir = Paths.get("/source");
+        Path cloudDir = Paths.get("/cloud");
+        Path downloadDir = Paths.get("/download");
+
+        // Create mock files
+        Path sourceFile = sourceDir.resolve("file.txt");
+        Path cloudFile = cloudDir.resolve("file.txt");
+        Path downloadedFile = downloadDir.resolve("file.txt");
+
+        // Mock file system behavior
+        when(fileSystem.getPath("/source")).thenReturn(sourceDir);
+        when(fileSystem.getPath("/cloud")).thenReturn(cloudDir);
+        when(fileSystem.getPath("/download")).thenReturn(downloadDir);
+        when(fileSystem.getPath("/source/file.txt")).thenReturn(sourceFile);
+        when(fileSystem.getPath("/cloud/file.txt")).thenReturn(cloudFile);
+        when(fileSystem.getPath("/download/file.txt")).thenReturn(downloadedFile);
+
+        when(Files.exists(sourceDir)).thenReturn(true);
+        when(Files.exists(cloudDir)).thenReturn(false);
+        when(Files.exists(downloadDir)).thenReturn(false);
+
+        when(Files.newDirectoryStream(sourceDir)).thenReturn(
+            Stream.of(sourceFile)::iterator
+        );
+
+        when(Files.isRegularFile(sourceFile)).thenReturn(true);
+
+        doNothing().when(Files.class);
+        Files.createDirectories(any(Path.class));
+
+        doNothing().when(Files.class);
+        Files.copy(any(Path.class), any(Path.class), any(StandardCopyOption.class));
+    }
+
+    @Test
+    void testIntegrationComponentAAndComponentB() throws IOException {
+        // Upload the file using ComponentA
+        componentA.uploadFile("/source/file.txt", "/cloud");
+
+        // Download the file using ComponentB
+        componentB.downloadFile("/cloud", "file.txt", "/download");
+
+        // Verify the download using ComponentB
+        boolean isVerified = componentB.verifyDownload("/source/file.txt", "/download/file.txt");
+
+        // Validate that the download is verified
+        assertTrue(isVerified);
+    }
+
+    @Test
+    void testErrorHandlingComponentA() {
+        // Placeholder for error handling test cases in Component A
+        Exception exception = assertThrows(IOException.class, () -> {
+            componentA.uploadFile("/source/nonexistent.txt", "/cloud");
+        });
+
+        // Validate the exception message
+        assertEquals("/source/nonexistent.txt (The system cannot find the file specified)", exception.getMessage());
+    }
+
+    @Test
+    void testErrorHandlingComponentB() {
+        // Mock a scenario where the cloud file does not exist
+        Exception downloadException = assertThrows(IOException.class, () -> {
+            componentB.downloadFile("/cloud", "nonexistent.txt", "/download");
+        });
+
+        // Validate the exception message
+        assertEquals("/cloud/nonexistent.txt (The system cannot find the file specified)", downloadException.getMessage());
+
+        // Mock a scenario where the original file does not exist
+        Exception verifyException = assertThrows(IOException.class, () -> {
+            componentB.verifyDownload("/source/nonexistent.txt", "/download/file.txt");
+        });
+
+        // Validate the exception message
+        assertEquals("/source/nonexistent.txt (The system cannot find the file specified)", verifyException.getMessage());
+    }
+}

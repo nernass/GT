@@ -1,0 +1,126 @@
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
+
+import java.io.*;
+
+class IntegrationTest {
+
+    @Mock
+    private BufferedWriter mockBufferedWriter;
+
+    @Mock
+    private FileWriter mockFileWriter;
+
+    @Mock
+    private BufferedReader mockBufferedReader;
+
+    @Mock
+    private FileReader mockFileReader;
+
+    @InjectMocks
+    private ComponentA componentA;
+
+    @InjectMocks
+    private ComponentB componentB;
+
+    @BeforeEach
+    void setUp() throws IOException {
+        MockitoAnnotations.openMocks(this);
+        when(mockFileWriter.append(anyChar())).thenReturn(mockFileWriter);
+        when(mockFileWriter.newLine()).thenReturn(mockFileWriter);
+        when(mockBufferedWriter.append(anyChar())).thenReturn(mockBufferedWriter);
+        when(mockBufferedWriter.newLine()).thenReturn(mockBufferedWriter);
+    }
+
+    @Test
+    void testIntegrationSuccess() throws IOException {
+        // Arrange
+        String logFile = "test_log.txt";
+        String data = "Test Data";
+
+        // Mock file operations for ComponentA
+        whenNew(BufferedWriter.class).withArguments(mockFileWriter).thenReturn(mockBufferedWriter);
+        whenNew(FileWriter.class).withArguments(logFile, true).thenReturn(mockFileWriter);
+
+        // Mock file operations for ComponentB
+        whenNew(BufferedReader.class).withArguments(mockFileReader).thenReturn(mockBufferedReader);
+        whenNew(FileReader.class).withArguments(logFile).thenReturn(mockFileReader);
+        when(mockBufferedReader.readLine()).thenReturn(null, data);
+
+        // Act
+        componentA.appendToLogFile(logFile, data);
+        boolean isVerified = componentB.verifyLastLine(logFile, data);
+
+        // Assert
+        assertTrue(isVerified);
+        verify(mockBufferedWriter).append(data);
+        verify(mockBufferedWriter).newLine();
+        verify(mockBufferedReader, times(2)).readLine();
+    }
+
+    @Test
+    void testIntegrationFailure() throws IOException {
+        // Arrange
+        String logFile = "test_log.txt";
+        String data = "Test Data";
+
+        // Mock file operations for ComponentA to throw an exception
+        whenNew(BufferedWriter.class).withArguments(mockFileWriter).thenReturn(mockBufferedWriter);
+        whenNew(FileWriter.class).withArguments(logFile, true).thenReturn(mockFileWriter);
+        doThrow(new IOException("IO Error")).when(mockBufferedWriter).append(data);
+
+        // Mock file operations for ComponentB to throw an exception
+        whenNew(BufferedReader.class).withArguments(mockFileReader).thenReturn(mockBufferedReader);
+        whenNew(FileReader.class).withArguments(logFile).thenReturn(mockFileReader);
+        when(mockBufferedReader.readLine()).thenReturn(null, data);
+        doThrow(new IOException("IO Error")).when(mockBufferedReader).readLine();
+
+        // Act & Assert
+        Exception appendException = assertThrows(IOException.class, () -> {
+            componentA.appendToLogFile(logFile, data);
+        });
+        assertEquals("IO Error", appendException.getMessage());
+
+        Exception readException = assertThrows(IOException.class, () -> {
+            componentB.readLastLine(logFile);
+        });
+        assertEquals("IO Error", readException.getMessage());
+
+        boolean isVerified = componentB.verifyLastLine(logFile, data);
+        assertFalse(isVerified);
+        verify(mockBufferedWriter).append(data);
+        verify(mockBufferedReader, times(2)).readLine();
+    }
+
+    @Test
+    void testIntegrationEdgeCase() throws IOException {
+        // Arrange
+        String logFile = "test_log.txt";
+        String data = "";
+
+        // Mock file operations for ComponentA
+        whenNew(BufferedWriter.class).withArguments(mockFileWriter).thenReturn(mockBufferedWriter);
+        whenNew(FileWriter.class).withArguments(logFile, true).thenReturn(mockFileWriter);
+
+        // Mock file operations for ComponentB
+        whenNew(BufferedReader.class).withArguments(mockFileReader).thenReturn(mockBufferedReader);
+        whenNew(FileReader.class).withArguments(logFile).thenReturn(mockFileReader);
+        when(mockBufferedReader.readLine()).thenReturn(null, data);
+
+        // Act
+        componentA.appendToLogFile(logFile, data);
+        boolean isVerified = componentB.verifyLastLine(logFile, data);
+
+        // Assert
+        assertTrue(isVerified);
+        verify(mockBufferedWriter).append(data);
+        verify(mockBufferedWriter).newLine();
+        verify(mockBufferedReader, times(2)).readLine();
+    }
+}

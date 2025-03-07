@@ -1,0 +1,92 @@
+
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
+
+import java.io.*;
+
+class IntegrationTest {
+
+    private ComponentA componentA;
+    private ComponentB componentB;
+
+    @Mock
+    private BufferedWriter mockBufferedWriter;
+    @Mock
+    private BufferedReader mockBufferedReader;
+
+    @BeforeEach
+    void setUp() throws IOException {
+        MockitoAnnotations.openMocks(this);
+        componentA = new ComponentA();
+        componentB = new ComponentB();
+
+        // Mock the BufferedWriter and BufferedReader
+        whenNew(BufferedWriter.class).withAnyArguments().thenReturn(mockBufferedWriter);
+        whenNew(BufferedReader.class).withAnyArguments().thenReturn(mockBufferedReader);
+
+        // Mock the behavior of BufferedWriter
+        doNothing().when(mockBufferedWriter).write(anyString());
+        doNothing().when(mockBufferedWriter).newLine();
+        doNothing().when(mockBufferedWriter).close();
+
+        // Mock the behavior of BufferedReader
+        when(mockBufferedReader.readLine()).thenReturn("Line 1", "Line 2", null);
+        doNothing().when(mockBufferedReader).close();
+    }
+
+    @Test
+    void testIntegrationComponentAAndComponentB() throws IOException {
+        String logFile = "test.log";
+        String data = "Test Data";
+
+        // Append data to the log file using ComponentA
+        componentA.appendToLogFile(logFile, data);
+
+        // Read the last line of the log file using ComponentB
+        String lastLine = componentB.readLastLine(logFile);
+
+        // Verify the last line using ComponentB
+        boolean isVerified = componentB.verifyLastLine(logFile, data);
+
+        // Validate that the last line is correct
+        assertEquals(data, lastLine);
+        assertTrue(isVerified);
+    }
+
+    @Test
+    void testErrorHandlingComponentA() {
+        String logFile = "nonexistent.log";
+        String data = "Test Data";
+
+        Exception exception = assertThrows(IOException.class, () -> {
+            componentA.appendToLogFile(logFile, data);
+        });
+
+        // Validate the exception message
+        assertNotNull(exception.getMessage());
+    }
+
+    @Test
+    void testErrorHandlingComponentB() {
+        String logFile = "nonexistent.log";
+
+        Exception readException = assertThrows(IOException.class, () -> {
+            componentB.readLastLine(logFile);
+        });
+
+        // Validate the exception message
+        assertNotNull(readException.getMessage());
+
+        Exception verifyException = assertThrows(IOException.class, () -> {
+            componentB.verifyLastLine(logFile, "Expected Data");
+        });
+
+        // Validate the exception message
+        assertNotNull(verifyException.getMessage());
+    }
+}
