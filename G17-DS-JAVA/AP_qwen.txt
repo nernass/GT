@@ -1,0 +1,91 @@
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
+
+public class IntegrationTest {
+
+    @Mock
+    private ComponentB mockComponentB;
+
+    @InjectMocks
+    private ComponentA componentA;
+
+    @BeforeEach
+    void setUp() {
+        MockitoAnnotations.openMocks(this);
+    }
+
+    @Test
+    void testIntegrationSuccess() {
+        // Arrange
+        String userId = "user123";
+        double amount = 100.0;
+        double userBalance = 200.0;
+        double expectedNewBalance = 100.0;
+
+        // Mock ComponentB to return the updated balance
+        when(mockComponentB.updateBalance(userId, amount, userBalance)).thenReturn(expectedNewBalance);
+
+        // Act
+        boolean isPaymentSuccessful = componentA.processPayment(userId, amount, userBalance);
+        double newBalance = mockComponentB.updateBalance(userId, amount, userBalance);
+        boolean isVerified = mockComponentB.verifyTransaction(userId, amount, userBalance, newBalance);
+
+        // Assert
+        assertTrue(isPaymentSuccessful);
+        assertEquals(expectedNewBalance, newBalance);
+        assertTrue(isVerified);
+        verify(mockComponentB).updateBalance(userId, amount, userBalance);
+        verify(mockComponentB).verifyTransaction(userId, amount, userBalance, expectedNewBalance);
+    }
+
+    @Test
+    void testIntegrationFailure() {
+        // Arrange
+        String userId = "user123";
+        double amount = 100.0;
+        double userBalance = 200.0;
+
+        // Mock ComponentB to throw an exception
+        when(mockComponentB.updateBalance(userId, amount, userBalance)).thenThrow(new IllegalArgumentException("Invalid transaction: Insufficient balance or invalid amount."));
+
+        // Act & Assert
+        boolean isPaymentSuccessful = componentA.processPayment(userId, amount, userBalance);
+        Exception exception = assertThrows(IllegalArgumentException.class, () -> {
+            mockComponentB.updateBalance(userId, amount, userBalance);
+        });
+        assertEquals("Invalid transaction: Insufficient balance or invalid amount.", exception.getMessage());
+
+        boolean isVerified = mockComponentB.verifyTransaction(userId, amount, userBalance, userBalance);
+        assertFalse(isPaymentSuccessful);
+        assertFalse(isVerified);
+        verify(mockComponentB).updateBalance(userId, amount, userBalance);
+        verify(mockComponentB).verifyTransaction(userId, amount, userBalance, userBalance);
+    }
+
+    @Test
+    void testIntegrationEdgeCase() {
+        // Arrange
+        String userId = "user123";
+        double amount = 0.0;
+        double userBalance = 200.0;
+
+        // Act
+        boolean isPaymentSuccessful = componentA.processPayment(userId, amount, userBalance);
+        Exception exception = assertThrows(IllegalArgumentException.class, () -> {
+            mockComponentB.updateBalance(userId, amount, userBalance);
+        });
+        assertEquals("Invalid transaction: Insufficient balance or invalid amount.", exception.getMessage());
+
+        boolean isVerified = mockComponentB.verifyTransaction(userId, amount, userBalance, userBalance);
+        assertFalse(isPaymentSuccessful);
+        assertFalse(isVerified);
+        verify(mockComponentB, never()).updateBalance(userId, amount, userBalance);
+        verify(mockComponentB, never()).verifyTransaction(userId, amount, userBalance, userBalance);
+    }
+}

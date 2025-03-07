@@ -1,0 +1,62 @@
+import static org.junit.jupiter.api.Assertions.*;
+import org.junit.jupiter.api.Test;
+import java.util.Set;
+
+class ComponentIntegrationTest {
+
+    @Test
+    void successFlow_GenerateAndSaveId() {
+        ComponentA componentA = new ComponentA();
+        ComponentB componentB = new ComponentB();
+        
+        String id = componentA.generateUniqueId();
+        boolean saveResult = componentB.saveResource(id);
+        
+        assertTrue(saveResult);
+        assertTrue(componentB.getSavedResourceIds().contains(id));
+    }
+
+    @Test
+    void duplicateId_SaveFails() {
+        ComponentA componentA = new ComponentA();
+        ComponentB componentB = new ComponentB();
+        
+        String id = componentA.generateUniqueId();
+        componentB.saveResource(id); // First save
+        
+        assertFalse(componentB.saveResource(id)); // Duplicate save
+        assertEquals(1, componentB.getSavedResourceIds().size());
+    }
+
+    @Test
+    void edgeCase_EmptyIdThrowsError() {
+        ComponentB componentB = new ComponentB();
+        assertThrows(IllegalArgumentException.class, () -> 
+            componentB.saveResource("")
+        );
+    }
+
+    @Test
+    void multipleUniqueIds_SavedCorrectly() {
+        ComponentA componentA = new ComponentA();
+        ComponentB componentB = new ComponentB();
+        
+        String id1 = componentA.generateUniqueId();
+        String id2 = componentA.generateUniqueId();
+        
+        componentB.saveResource(id1);
+        componentB.saveResource(id2);
+        
+        Set<String> savedIds = componentB.getSavedResourceIds();
+        assertEquals(2, savedIds.size());
+        assertTrue(savedIds.contains(id1) && savedIds.contains(id2));
+    }
+
+    @Test
+    void nullId_ThrowsException() {
+        ComponentB componentB = new ComponentB();
+        assertThrows(IllegalArgumentException.class, () -> 
+            componentB.saveResource(null)
+        );
+    }
+}

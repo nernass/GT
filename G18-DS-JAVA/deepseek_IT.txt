@@ -1,0 +1,53 @@
+```java
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
+
+public class ComponentIntegrationTest {
+
+    private ComponentA componentA;
+    private ComponentB componentB;
+    private final String sampleContent = "Sample text";
+    private final String targetFormat = "Word";
+
+    @BeforeEach
+    void setUp() {
+        componentA = new ComponentA();
+        componentB = new ComponentB();
+    }
+
+    @Test
+    void convertAndVerifyDocument_Success() {
+        String converted = componentA.convertDocument(sampleContent, targetFormat);
+        String expected = "Converted to " + targetFormat + ": " + sampleContent;
+        assertTrue(componentB.verifyDocumentContent(converted, expected));
+    }
+
+    @Test
+    void convertDocument_NullInput_ThrowsException() {
+        assertThrows(IllegalArgumentException.class, () ->
+            componentA.convertDocument(null, targetFormat)
+        );
+        assertThrows(IllegalArgumentException.class, () ->
+            componentA.convertDocument(sampleContent, null)
+        );
+    }
+
+    @Test
+    void verifyDocument_NullInput_ThrowsException() {
+        String validConverted = componentA.convertDocument(sampleContent, targetFormat);
+        assertThrows(IllegalArgumentException.class, () ->
+            componentB.verifyDocumentContent(null, validConverted)
+        );
+        assertThrows(IllegalArgumentException.class, () ->
+            componentB.verifyDocumentContent(validConverted, null)
+        );
+    }
+
+    @Test
+    void verifyDocument_FailsWhenMismatched() {
+        String converted = componentA.convertDocument(sampleContent, targetFormat);
+        assertFalse(componentB.verifyDocumentContent(converted, "Incorrect expected content"));
+    }
+}
+```

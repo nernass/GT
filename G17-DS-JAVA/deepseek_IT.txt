@@ -1,0 +1,61 @@
+```java
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
+
+public class ComponentIntegrationTest {
+
+    private ComponentA componentA;
+    private ComponentB componentB;
+    private final String userId = "user123";
+    private final double validAmount = 50.0;
+    private final double initialBalance = 100.0;
+
+    @BeforeEach
+    void setUp() {
+        componentA = new ComponentA();
+        componentB = new ComponentB();
+    }
+
+    @Test
+    void testSuccessfulPaymentAndBalanceUpdate() {
+        boolean paymentSuccess = componentA.processPayment(userId, validAmount, initialBalance);
+        assertTrue(paymentSuccess);
+
+        double newBalance = componentB.updateBalance(userId, validAmount, initialBalance);
+        assertEquals(initialBalance - validAmount, newBalance);
+
+        assertTrue(componentB.verifyTransaction(userId, validAmount, initialBalance, newBalance));
+    }
+
+    @Test
+    void testInsufficientBalance() {
+        double insufficientAmount = 150.0;
+        boolean paymentSuccess = componentA.processPayment(userId, insufficientAmount, initialBalance);
+        assertFalse(paymentSuccess);
+
+        assertThrows(IllegalArgumentException.class, () ->
+            componentB.updateBalance(userId, insufficientAmount, initialBalance)
+        );
+    }
+
+    @Test
+    void testInvalidPaymentAmount() {
+        double invalidAmount = -10.0;
+        boolean paymentSuccess = componentA.processPayment(userId, invalidAmount, initialBalance);
+        assertFalse(paymentSuccess);
+
+        assertThrows(IllegalArgumentException.class, () ->
+            componentB.updateBalance(userId, invalidAmount, initialBalance)
+        );
+    }
+
+    @Test
+    void testTransactionVerificationFailure() {
+        double tamperedAmount = 30.0;
+        double incorrectNewBalance = 80.0; // Should be 70.0 if 100-30
+
+        assertFalse(componentB.verifyTransaction(userId, tamperedAmount, initialBalance, incorrectNewBalance));
+    }
+}
+```

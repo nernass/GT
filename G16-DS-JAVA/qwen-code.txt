@@ -1,0 +1,127 @@
+
+import static org.junit.jupiter.api.Assertions.*;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
+import java.util.List;
+
+class IntegrationTest {
+
+    private ComponentA componentA;
+    private ComponentB componentB;
+
+    @BeforeEach
+    void setUp() {
+        componentA = new ComponentA();
+        componentB = new ComponentB();
+    }
+
+    @Test
+    void testIntegrationComponentAAndComponentB() {
+        // Valid email and message
+        String emailAddress = "user@example.com";
+        String message = "Welcome to our service!";
+
+        // Send confirmation email using ComponentA
+        boolean isSent = componentA.sendConfirmationEmail(emailAddress, message);
+        assertTrue(isSent);
+
+        // Retrieve the email logs using ComponentA
+        List<String> emailLogs = componentA.getEmailLogs();
+
+        // Verify the email was sent using ComponentB
+        boolean isVerified = componentB.verifyEmailSent(emailLogs, emailAddress, message);
+        assertTrue(isVerified);
+    }
+
+    @Test
+    void testInvalidEmailComponentA() {
+        // Invalid email (null)
+        String emailAddress = null;
+        String message = "Welcome to our service!";
+
+        // Send confirmation email using ComponentA
+        boolean isSent = componentA.sendConfirmationEmail(emailAddress, message);
+        assertFalse(isSent);
+
+        // Retrieve the email logs using ComponentA
+        List<String> emailLogs = componentA.getEmailLogs();
+
+        // Verify the email was not sent using ComponentB
+        boolean isVerified = componentB.verifyEmailSent(emailLogs, emailAddress, message);
+        assertFalse(isVerified);
+    }
+
+    @Test
+    void testInvalidMessageComponentA() {
+        // Invalid message (null)
+        String emailAddress = "user@example.com";
+        String message = null;
+
+        // Send confirmation email using ComponentA
+        boolean isSent = componentA.sendConfirmationEmail(emailAddress, message);
+        assertFalse(isSent);
+
+        // Retrieve the email logs using ComponentA
+        List<String> emailLogs = componentA.getEmailLogs();
+
+        // Verify the email was not sent using ComponentB
+        boolean isVerified = componentB.verifyEmailSent(emailLogs, emailAddress, message);
+        assertFalse(isVerified);
+    }
+
+    @Test
+    void testBothInvalidComponentA() {
+        // Both email and message are null
+        String emailAddress = null;
+        String message = null;
+
+        // Send confirmation email using ComponentA
+        boolean isSent = componentA.sendConfirmationEmail(emailAddress, message);
+        assertFalse(isSent);
+
+        // Retrieve the email logs using ComponentA
+        List<String> emailLogs = componentA.getEmailLogs();
+
+        // Verify the email was not sent using ComponentB
+        boolean isVerified = componentB.verifyEmailSent(emailLogs, emailAddress, message);
+        assertFalse(isVerified);
+    }
+
+    @Test
+    void testVerifyEmailSentWithInvalidLogsComponentB() {
+        // Invalid logs (null)
+        List<String> emailLogs = null;
+        String emailAddress = "user@example.com";
+        String message = "Welcome to our service!";
+
+        // Verify the email was sent using ComponentB
+        boolean isVerified = componentB.verifyEmailSent(emailLogs, emailAddress, message);
+        assertFalse(isVerified);
+    }
+
+    @Test
+    void testVerifyEmailSentWithInvalidEmailAddressComponentB() {
+        // Invalid email address (null)
+        List<String> emailLogs = componentA.getEmailLogs();
+        String emailAddress = null;
+        String message = "Welcome to our service!";
+
+        // Verify the email was sent using ComponentB
+        boolean isVerified = componentB.verifyEmailSent(emailLogs, emailAddress, message);
+        assertFalse(isVerified);
+    }
+
+    @Test
+    void testVerifyEmailSentWithInvalidMessageComponentB() {
+        // Invalid message (null)
+        List<String> emailLogs = componentA.getEmailLogs();
+        String emailAddress = "user@example.com";
+        String message = null;
+
+        // Verify the email was sent using ComponentB
+        boolean isVerified = componentB.verifyEmailSent(emailLogs, emailAddress, message);
+        assertFalse(isVerified);
+    }
+}

@@ -1,0 +1,81 @@
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
+
+public class IntegrationTest {
+
+    @Mock
+    private ComponentB mockComponentB;
+
+    @InjectMocks
+    private ComponentA componentA;
+
+    @BeforeEach
+    void setUp() {
+        MockitoAnnotations.openMocks(this);
+    }
+
+    @Test
+    void testIntegrationSuccess() {
+        // Arrange
+        String documentContent = "Original Document Content";
+        String targetFormat = "Word";
+        String expectedConvertedContent = "Converted to Word: Original Document Content";
+
+        // Mock ComponentB to return true for successful verification
+        when(mockComponentB.verifyDocumentContent(expectedConvertedContent, expectedConvertedContent)).thenReturn(true);
+
+        // Act
+        String convertedContent = componentA.convertDocument(documentContent, targetFormat);
+        boolean isVerified = mockComponentB.verifyDocumentContent(convertedContent, expectedConvertedContent);
+
+        // Assert
+        assertEquals(expectedConvertedContent, convertedContent);
+        assertTrue(isVerified);
+        verify(mockComponentB).verifyDocumentContent(expectedConvertedContent, expectedConvertedContent);
+    }
+
+    @Test
+    void testIntegrationFailure() {
+        // Arrange
+        String documentContent = "Original Document Content";
+        String targetFormat = "Word";
+        String expectedConvertedContent = "Converted to Word: Original Document Content";
+
+        // Mock ComponentB to throw an exception
+        when(mockComponentB.verifyDocumentContent(expectedConvertedContent, expectedConvertedContent)).thenThrow(new IllegalArgumentException("Verification failed"));
+
+        // Act & Assert
+        String convertedContent = componentA.convertDocument(documentContent, targetFormat);
+        Exception exception = assertThrows(IllegalArgumentException.class, () -> {
+            mockComponentB.verifyDocumentContent(convertedContent, expectedConvertedContent);
+        });
+        assertEquals("Verification failed", exception.getMessage());
+
+        boolean isVerified = mockComponentB.verifyDocumentContent(convertedContent, expectedConvertedContent);
+        assertFalse(isVerified);
+        verify(mockComponentB).verifyDocumentContent(expectedConvertedContent, expectedConvertedContent);
+    }
+
+    @Test
+    void testIntegrationEdgeCase() {
+        // Arrange
+        String documentContent = null;
+        String targetFormat = "Word";
+
+        // Act & Assert
+        Exception exception = assertThrows(IllegalArgumentException.class, () -> {
+            componentA.convertDocument(documentContent, targetFormat);
+        });
+        assertEquals("Document content and target format must not be null.", exception.getMessage());
+
+        boolean isVerified = mockComponentB.verifyDocumentContent(null, null);
+        assertFalse(isVerified);
+        verify(mockComponentB, never()).verifyDocumentContent(anyString(), anyString());
+    }
+}

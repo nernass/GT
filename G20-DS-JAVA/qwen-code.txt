@@ -1,0 +1,100 @@
+
+import static org.junit.jupiter.api.Assertions.*;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
+import java.util.Set;
+import java.util.UUID;
+
+class IntegrationTest {
+
+    private ComponentA componentA;
+    private ComponentB componentB;
+
+    @BeforeEach
+    void setUp() {
+        componentA = new ComponentA();
+        componentB = new ComponentB();
+    }
+
+    @Test
+    void testIntegrationComponentAAndComponentB() {
+        // Generate a unique ID using ComponentA
+        String resourceId = componentA.generateUniqueId();
+
+        // Save the resource using ComponentB
+        boolean isSaved = componentB.saveResource(resourceId);
+        assertTrue(isSaved);
+
+        // Retrieve the saved resource IDs using ComponentB
+        Set<String> savedResourceIds = componentB.getSavedResourceIds();
+
+        // Verify that the resource ID is in the saved resource IDs
+        assertTrue(savedResourceIds.contains(resourceId));
+    }
+
+    @Test
+    void testDuplicateResourceIDComponentB() {
+        // Generate a unique ID using ComponentA
+        String resourceId = componentA.generateUniqueId();
+
+        // Save the resource using ComponentB
+        boolean isSavedFirstTime = componentB.saveResource(resourceId);
+        assertTrue(isSavedFirstTime);
+
+        // Attempt to save the same resource ID again using ComponentB
+        boolean isSavedSecondTime = componentB.saveResource(resourceId);
+        assertFalse(isSavedSecondTime);
+
+        // Retrieve the saved resource IDs using ComponentB
+        Set<String> savedResourceIds = componentB.getSavedResourceIds();
+
+        // Verify that the resource ID is in the saved resource IDs only once
+        assertEquals(1, savedResourceIds.size());
+        assertTrue(savedResourceIds.contains(resourceId));
+    }
+
+    @Test
+    void testInvalidResourceIdComponentB() {
+        // Invalid resource ID (null)
+        String resourceId = null;
+
+        Exception exception = assertThrows(IllegalArgumentException.class, () -> {
+            componentB.saveResource(resourceId);
+        });
+
+        assertEquals("Resource ID must not be null or empty.", exception.getMessage());
+
+        // Invalid resource ID (empty string)
+        resourceId = "";
+
+        Exception emptyException = assertThrows(IllegalArgumentException.class, () -> {
+            componentB.saveResource(resourceId);
+        });
+
+        assertEquals("Resource ID must not be null or empty.", emptyException.getMessage());
+    }
+
+    @Test
+    void testMultipleUniqueIDsComponentAAndComponentB() {
+        // Generate multiple unique IDs using ComponentA
+        String resourceId1 = componentA.generateUniqueId();
+        String resourceId2 = componentA.generateUniqueId();
+
+        // Save the resources using ComponentB
+        boolean isSaved1 = componentB.saveResource(resourceId1);
+        assertTrue(isSaved1);
+
+        boolean isSaved2 = componentB.saveResource(resourceId2);
+        assertTrue(isSaved2);
+
+        // Retrieve the saved resource IDs using ComponentB
+        Set<String> savedResourceIds = componentB.getSavedResourceIds();
+
+        // Verify that both resource IDs are in the saved resource IDs
+        assertEquals(2, savedResourceIds.size());
+        assertTrue(savedResourceIds.contains(resourceId1));
+        assertTrue(savedResourceIds.contains(resourceId2));
+    }
+}

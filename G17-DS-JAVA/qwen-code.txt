@@ -1,0 +1,128 @@
+
+import static org.junit.jupiter.api.Assertions.*;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
+public class IntegrationTest {
+
+    private ComponentA componentA;
+    private ComponentB componentB;
+
+    @BeforeEach
+    void setUp() {
+        componentA = new ComponentA();
+        componentB = new ComponentB();
+    }
+
+    @Test
+    void testIntegrationComponentAAndComponentB() {
+        // Valid transaction data
+        String userId = "user123";
+        double amount = 50.0;
+        double userBalance = 100.0;
+
+        // Process payment using ComponentA
+        boolean isPaymentSuccessful = componentA.processPayment(userId, amount, userBalance);
+        assertTrue(isPaymentSuccessful);
+
+        // Update balance using ComponentB
+        double updatedBalance = componentB.updateBalance(userId, amount, userBalance);
+        assertEquals(50.0, updatedBalance);
+
+        // Verify transaction using ComponentB
+        boolean isTransactionVerified = componentB.verifyTransaction(userId, amount, userBalance, updatedBalance);
+        assertTrue(isTransactionVerified);
+    }
+
+    @Test
+    void testInvalidAmountComponentA() {
+        // Invalid amount (zero)
+        String userId = "user123";
+        double amount = 0.0;
+        double userBalance = 100.0;
+
+        // Process payment using ComponentA
+        boolean isPaymentSuccessful = componentA.processPayment(userId, amount, userBalance);
+        assertFalse(isPaymentSuccessful);
+    }
+
+    @Test
+    void testNegativeAmountComponentA() {
+        // Invalid amount (negative)
+        String userId = "user123";
+        double amount = -50.0;
+        double userBalance = 100.0;
+
+        // Process payment using ComponentA
+        boolean isPaymentSuccessful = componentA.processPayment(userId, amount, userBalance);
+        assertFalse(isPaymentSuccessful);
+    }
+
+    @Test
+    void testInsufficientBalanceComponentA() {
+        // Insufficient balance
+        String userId = "user123";
+        double amount = 150.0;
+        double userBalance = 100.0;
+
+        // Process payment using ComponentA
+        boolean isPaymentSuccessful = componentA.processPayment(userId, amount, userBalance);
+        assertFalse(isPaymentSuccessful);
+    }
+
+    @Test
+    void testInvalidTransactionComponentB() {
+        // Invalid transaction (insufficient balance)
+        String userId = "user123";
+        double amount = 150.0;
+        double userBalance = 100.0;
+
+        Exception exception = assertThrows(IllegalArgumentException.class, () -> {
+            componentB.updateBalance(userId, amount, userBalance);
+        });
+
+        assertEquals("Invalid transaction: Insufficient balance or invalid amount.", exception.getMessage());
+    }
+
+    @Test
+    void testInvalidAmountComponentB() {
+        // Invalid transaction (zero amount)
+        String userId = "user123";
+        double amount = 0.0;
+        double userBalance = 100.0;
+
+        Exception exception = assertThrows(IllegalArgumentException.class, () -> {
+            componentB.updateBalance(userId, amount, userBalance);
+        });
+
+        assertEquals("Invalid transaction: Insufficient balance or invalid amount.", exception.getMessage());
+    }
+
+    @Test
+    void testNegativeAmountComponentB() {
+        // Invalid transaction (negative amount)
+        String userId = "user123";
+        double amount = -50.0;
+        double userBalance = 100.0;
+
+        Exception exception = assertThrows(IllegalArgumentException.class, () -> {
+            componentB.updateBalance(userId, amount, userBalance);
+        });
+
+        assertEquals("Invalid transaction: Insufficient balance or invalid amount.", exception.getMessage());
+    }
+
+    @Test
+    void testFailedVerificationComponentB() {
+        // Failed transaction verification
+        String userId = "user123";
+        double amount = 50.0;
+        double oldBalance = 100.0;
+        double newBalance = 40.0; // Incorrect new balance
+
+        // Verify transaction using ComponentB
+        boolean isTransactionVerified = componentB.verifyTransaction(userId, amount, oldBalance, newBalance);
+        assertFalse(isTransactionVerified);
+    }
+}

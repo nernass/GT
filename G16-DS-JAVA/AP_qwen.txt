@@ -1,0 +1,89 @@
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
+
+import java.util.ArrayList;
+import java.util.List;
+
+class IntegrationTest {
+
+    @Mock
+    private ComponentB mockComponentB;
+
+    @InjectMocks
+    private ComponentA componentA;
+
+    @BeforeEach
+    void setUp() {
+        MockitoAnnotations.openMocks(this);
+    }
+
+    @Test
+    void testIntegrationSuccess() {
+        // Arrange
+        String emailAddress = "user@example.com";
+        String message = "Welcome to our service!";
+        List<String> emailLogs = new ArrayList<>();
+
+        // Act
+        boolean isSent = componentA.sendConfirmationEmail(emailAddress, message);
+        emailLogs = componentA.getEmailLogs();
+        boolean isVerified = mockComponentB.verifyEmailSent(emailLogs, emailAddress, message);
+
+        // Assert
+        assertTrue(isSent);
+        assertTrue(isVerified);
+        assertEquals(1, emailLogs.size());
+        assertTrue(emailLogs.get(0).contains("Email sent to: " + emailAddress));
+        assertTrue(emailLogs.get(0).contains("Message: " + message));
+        verify(mockComponentB).verifyEmailSent(emailLogs, emailAddress, message);
+    }
+
+    @Test
+    void testIntegrationFailure() {
+        // Arrange
+        String emailAddress = "user@example.com";
+        String message = "Welcome to our service!";
+        List<String> emailLogs = new ArrayList<>();
+
+        // Mock ComponentB to return false for failed verification
+        when(mockComponentB.verifyEmailSent(anyList(), anyString(), anyString())).thenReturn(false);
+
+        // Act
+        boolean isSent = componentA.sendConfirmationEmail(emailAddress, message);
+        emailLogs = componentA.getEmailLogs();
+        boolean isVerified = mockComponentB.verifyEmailSent(emailLogs, emailAddress, message);
+
+        // Assert
+        assertTrue(isSent);
+        assertFalse(isVerified);
+        assertEquals(1, emailLogs.size());
+        assertTrue(emailLogs.get(0).contains("Email sent to: " + emailAddress));
+        assertTrue(emailLogs.get(0).contains("Message: " + message));
+        verify(mockComponentB).verifyEmailSent(emailLogs, emailAddress, message);
+    }
+
+    @Test
+    void testIntegrationEdgeCase() {
+        // Arrange
+        String emailAddress = null;
+        String message = null;
+        List<String> emailLogs = new ArrayList<>();
+
+        // Act
+        boolean isSent = componentA.sendConfirmationEmail(emailAddress, message);
+        emailLogs = componentA.getEmailLogs();
+        boolean isVerified = mockComponentB.verifyEmailSent(emailLogs, emailAddress, message);
+
+        // Assert
+        assertFalse(isSent);
+        assertFalse(isVerified);
+        assertEquals(0, emailLogs.size());
+        verify(mockComponentB, never()).verifyEmailSent(emailLogs, emailAddress, message);
+    }
+}

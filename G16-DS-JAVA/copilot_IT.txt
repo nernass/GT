@@ -1,0 +1,86 @@
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
+
+import java.util.List;
+
+public class IntegrationTest {
+
+    private ComponentA componentA;
+    private ComponentB componentB;
+
+    @BeforeEach
+    public void setUp() {
+        // Initialize components
+        componentA = new ComponentA();
+        componentB = new ComponentB();
+    }
+
+    @Test
+    public void testSendConfirmationEmailAndVerify() {
+        String emailAddress = "user@example.com";
+        String message = "Welcome to our service!";
+
+        // Send a confirmation email using ComponentA
+        boolean emailSent = componentA.sendConfirmationEmail(emailAddress, message);
+        assertTrue(emailSent, "Email should be sent successfully");
+
+        // Retrieve email logs from ComponentA
+        List<String> emailLogs = componentA.getEmailLogs();
+        assertNotNull(emailLogs, "Email logs should not be null");
+
+        // Verify the email using ComponentB
+        boolean emailVerified = componentB.verifyEmailSent(emailLogs, emailAddress, message);
+        assertTrue(emailVerified, "Email should be verified successfully");
+    }
+
+    @Test
+    public void testSendConfirmationEmail_NullParameters() {
+        String emailAddress = null;
+        String message = null;
+
+        // Attempt to send an email with null parameters
+        boolean emailSent = componentA.sendConfirmationEmail(emailAddress, message);
+        assertFalse(emailSent, "Email should not be sent with null parameters");
+
+        // Retrieve email logs
+        List<String> emailLogs = componentA.getEmailLogs();
+
+        // Verify that the email was not logged
+        boolean emailVerified = componentB.verifyEmailSent(emailLogs, emailAddress, message);
+        assertFalse(emailVerified, "Email should not be verified with null parameters");
+    }
+
+    @Test
+    public void testVerifyEmailSent_InvalidLogs() {
+        List<String> emailLogs = null;
+        String emailAddress = "user@example.com";
+        String message = "Welcome to our service!";
+
+        // Attempt to verify email with null email logs
+        boolean emailVerified = componentB.verifyEmailSent(emailLogs, emailAddress, message);
+        assertFalse(emailVerified, "Verification should fail with null email logs");
+    }
+
+    @Test
+    public void testVerifyEmailSent_IncorrectDetails() {
+        String emailAddress = "user@example.com";
+        String message = "Welcome to our service!";
+        String incorrectEmail = "wrong@example.com";
+        String incorrectMessage = "Incorrect message";
+
+        // Send a confirmation email
+        componentA.sendConfirmationEmail(emailAddress, message);
+
+        // Retrieve email logs
+        List<String> emailLogs = componentA.getEmailLogs();
+
+        // Verify with incorrect email address
+        boolean emailVerifiedIncorrectEmail = componentB.verifyEmailSent(emailLogs, incorrectEmail, message);
+        assertFalse(emailVerifiedIncorrectEmail, "Verification should fail with incorrect email address");
+
+        // Verify with incorrect message
+        boolean emailVerifiedIncorrectMessage = componentB.verifyEmailSent(emailLogs, emailAddress, incorrectMessage);
+        assertFalse(emailVerifiedIncorrectMessage, "Verification should fail with incorrect message");
+    }
+}

@@ -1,0 +1,66 @@
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
+
+public class IntegrationTest {
+
+    private ComponentA componentA;
+    private ComponentB componentB;
+
+    @BeforeEach
+    public void setUp() {
+        // Placeholder for required setup
+        componentA = new ComponentA();
+        componentB = new ComponentB();
+    }
+
+    @Test
+    public void testConvertAndVerifyDocument() {
+        String documentContent = "This is the original document.";
+        String targetFormat = "Word";
+        String expectedContent = "Converted to " + targetFormat + ": " + documentContent;
+
+        // Convert the document using ComponentA
+        String convertedContent = componentA.convertDocument(documentContent, targetFormat);
+
+        // Verify the converted document using ComponentB
+        boolean isVerified = componentB.verifyDocumentContent(convertedContent, expectedContent);
+        assertTrue(isVerified, "The converted content should match the expected content.");
+    }
+
+    @Test
+    public void testConvertDocument_NullParameters() {
+        // Test error handling when documentContent is null
+        assertThrows(IllegalArgumentException.class, () -> {
+            componentA.convertDocument(null, "Word");
+        });
+
+        // Test error handling when targetFormat is null
+        assertThrows(IllegalArgumentException.class, () -> {
+            componentA.convertDocument("Sample content", null);
+        });
+    }
+
+    @Test
+    public void testVerifyDocumentContent_NullParameters() {
+        // Test error handling when convertedContent is null
+        assertThrows(IllegalArgumentException.class, () -> {
+            componentB.verifyDocumentContent(null, "Expected content");
+        });
+
+        // Test error handling when expectedContent is null
+        assertThrows(IllegalArgumentException.class, () -> {
+            componentB.verifyDocumentContent("Converted content", null);
+        });
+    }
+
+    @Test
+    public void testVerifyDocumentContent_Mismatch() {
+        String convertedContent = "Converted to PDF: This is the original document.";
+        String expectedContent = "Converted to Word: This is the original document.";
+
+        // Verify that the content does not match
+        boolean isVerified = componentB.verifyDocumentContent(convertedContent, expectedContent);
+        assertFalse(isVerified, "The converted content should not match the incorrect expected content.");
+    }
+}

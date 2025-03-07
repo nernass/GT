@@ -1,0 +1,61 @@
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
+
+public class IntegrationTest {
+
+    private ComponentA componentA;
+    private ComponentB componentB;
+
+    @BeforeEach
+    public void setUp() {
+        // Placeholder for any required setup
+        componentA = new ComponentA();
+        componentB = new ComponentB();
+    }
+
+    @Test
+    public void testGenerateAndSaveUniqueId() {
+        // Generate a unique ID using ComponentA
+        String uniqueId = componentA.generateUniqueId();
+        assertNotNull(uniqueId, "Generated ID should not be null");
+        assertFalse(uniqueId.isEmpty(), "Generated ID should not be empty");
+
+        // Save the resource using ComponentB
+        boolean saveResult = componentB.saveResource(uniqueId);
+        assertTrue(saveResult, "Resource should be saved successfully");
+
+        // Verify that the ID is saved
+        assertTrue(componentB.getSavedResourceIds().contains(uniqueId), "Saved IDs should contain the generated unique ID");
+    }
+
+    @Test
+    public void testSaveDuplicateId() {
+        // Generate a unique ID using ComponentA
+        String uniqueId = componentA.generateUniqueId();
+
+        // Save the resource the first time
+        boolean firstSaveResult = componentB.saveResource(uniqueId);
+        assertTrue(firstSaveResult, "First save should be successful");
+
+        // Attempt to save the same ID again
+        boolean secondSaveResult = componentB.saveResource(uniqueId);
+        assertFalse(secondSaveResult, "Second save should fail due to duplicate ID");
+    }
+
+    @Test
+    public void testSaveResourceWithNullId() {
+        // Attempt to save a null ID
+        assertThrows(IllegalArgumentException.class, () -> {
+            componentB.saveResource(null);
+        }, "Should throw IllegalArgumentException for null resourceId");
+    }
+
+    @Test
+    public void testSaveResourceWithEmptyId() {
+        // Attempt to save an empty ID
+        assertThrows(IllegalArgumentException.class, () -> {
+            componentB.saveResource("");
+        }, "Should throw IllegalArgumentException for empty resourceId");
+    }
+}

@@ -1,0 +1,71 @@
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
+
+import java.util.HashSet;
+import java.util.Set;
+import java.util.UUID;
+
+class IntegrationTest {
+
+    @Mock
+    private ComponentB mockComponentB;
+
+    @InjectMocks
+    private ComponentA componentA;
+
+    @BeforeEach
+    void setUp() {
+        MockitoAnnotations.openMocks(this);
+    }
+
+    @Test
+    void testIntegrationSuccess() {
+        // Arrange
+        String uniqueId = UUID.randomUUID().toString();
+        when(mockComponentB.saveResource(uniqueId)).thenReturn(true);
+
+        // Act
+        String generatedId = componentA.generateUniqueId();
+        boolean isSaved = mockComponentB.saveResource(generatedId);
+
+        // Assert
+        assertNotNull(generatedId);
+        assertTrue(isSaved);
+        verify(mockComponentB).saveResource(generatedId);
+    }
+
+    @Test
+    void testIntegrationFailure() {
+        // Arrange
+        String uniqueId = UUID.randomUUID().toString();
+        when(mockComponentB.saveResource(uniqueId)).thenThrow(new IllegalArgumentException("Resource ID must not be null or empty."));
+
+        // Act & Assert
+        String generatedId = componentA.generateUniqueId();
+        Exception exception = assertThrows(IllegalArgumentException.class, () -> {
+            mockComponentB.saveResource(generatedId);
+        });
+        assertEquals("Resource ID must not be null or empty.", exception.getMessage());
+
+        boolean isSaved = mockComponentB.saveResource(generatedId);
+        assertFalse(isSaved);
+        verify(mockComponentB).saveResource(generatedId);
+    }
+
+    @Test
+    void testIntegrationEdgeCase() {
+        // Arrange
+        String invalidId = "";
+
+        // Act & Assert
+        boolean isSaved = mockComponentB.saveResource(invalidId);
+        assertFalse(isSaved);
+        verify(mockComponentB).saveResource(invalidId);
+    }
+}

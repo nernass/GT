@@ -1,0 +1,88 @@
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
+
+import java.util.ArrayList;
+import java.util.List;
+
+class IntegrationTest {
+
+    @Mock
+    private ComponentB mockComponentB;
+
+    @InjectMocks
+    private ComponentA componentA;
+
+    @BeforeEach
+    void setUp() {
+        MockitoAnnotations.openMocks(this);
+    }
+
+    @Test
+    void testIntegrationSuccess() {
+        // Arrange
+        String userId = "user123";
+        String message = "Your order has been shipped.";
+        List<String> notificationLogs = new ArrayList<>();
+
+        // Act
+        boolean isSent = componentA.sendNotification(userId, message);
+        notificationLogs = componentA.getNotificationLogs();
+        boolean isVerified = mockComponentB.verifyNotificationReceived(notificationLogs, userId, message);
+
+        // Assert
+        assertTrue(isSent);
+        assertTrue(isVerified);
+        assertEquals(1, notificationLogs.size());
+        assertTrue(notificationLogs.get(0).contains("Notification sent to user: " + userId));
+        assertTrue(notificationLogs.get(0).contains("Message: " + message));
+        verify(mockComponentB).verifyNotificationReceived(notificationLogs, userId, message);
+    }
+
+    @Test
+    void testIntegrationFailure() {
+        // Arrange
+        String userId = "user123";
+        String message = "Your order has been shipped.";
+        List<String> notificationLogs = new ArrayList<>();
+
+        // Mock ComponentB to return false for failed verification
+        when(mockComponentB.verifyNotificationReceived(anyList(), anyString(), anyString())).thenReturn(false);
+
+        // Act
+        boolean isSent = componentA.sendNotification(userId, message);
+        notificationLogs = componentA.getNotificationLogs();
+        boolean isVerified = mockComponentB.verifyNotificationReceived(notificationLogs, userId, message);
+
+        // Assert
+        assertTrue(isSent);
+        assertFalse(isVerified);
+        assertEquals(1, notificationLogs.size());
+        assertTrue(notificationLogs.get(0).contains("Notification sent to user: " + userId));
+        assertTrue(notificationLogs.get(0).contains("Message: " + message));
+        verify(mockComponentB).verifyNotificationReceived(notificationLogs, userId, message);
+    }
+
+    @Test
+    void testIntegrationEdgeCase() {
+        // Arrange
+        String userId = null;
+        String message = null;
+        List<String> notificationLogs = new ArrayList<>();
+
+        // Act
+        boolean isSent = componentA.sendNotification(userId, message);
+        boolean isVerified = mockComponentB.verifyNotificationReceived(notificationLogs, userId, message);
+
+        // Assert
+        assertFalse(isSent);
+        assertFalse(isVerified);
+        assertEquals(0, notificationLogs.size());
+        verify(mockComponentB, never()).verifyNotificationReceived(anyList(), anyString(), anyString());
+    }
+}

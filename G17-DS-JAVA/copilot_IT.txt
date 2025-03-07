@@ -1,0 +1,142 @@
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
+
+public class IntegrationTest {
+
+    private ComponentA componentA;
+    private ComponentB componentB;
+
+    @BeforeEach
+    public void setUp() {
+        // Initialize components
+        componentA = new ComponentA();
+        componentB = new ComponentB();
+    }
+
+    @Test
+    public void testSuccessfulPaymentProcess() {
+        String userId = "user123";
+        double amount = 50.0;
+        double userBalance = 100.0;
+
+        // Process payment using ComponentA
+        boolean paymentSuccess = componentA.processPayment(userId, amount, userBalance);
+        assertTrue(paymentSuccess, "Payment should be successful");
+
+        // Update balance using ComponentB
+        double updatedBalance = componentB.updateBalance(userId, amount, userBalance);
+        assertEquals(50.0, updatedBalance, 0.001, "Balance should be updated correctly");
+
+        // Verify transaction using ComponentB
+        boolean transactionVerified = componentB.verifyTransaction(userId, amount, userBalance, updatedBalance);
+        assertTrue(transactionVerified, "Transaction should be verified successfully");
+    }
+
+    @Test
+    public void testPaymentWithInsufficientBalance() {
+        String userId = "user123";
+        double amount = 150.0;
+        double userBalance = 100.0;
+
+        // Process payment using ComponentA
+        boolean paymentSuccess = componentA.processPayment(userId, amount, userBalance);
+        assertFalse(paymentSuccess, "Payment should fail due to insufficient balance");
+
+        // Attempt to update balance using ComponentB
+        assertThrows(IllegalArgumentException.class, () -> {
+            componentB.updateBalance(userId, amount, userBalance);
+        }, "Should throw exception due to insufficient balance");
+    }
+
+    @Test
+    public void testPaymentWithInvalidAmount() {
+        String userId = "user123";
+        double amount = -10.0;
+        double userBalance = 100.0;
+
+        // Process payment using ComponentA
+        boolean paymentSuccess = componentA.processPayment(userId, amount, userBalance);
+        assertFalse(paymentSuccess, "Payment should fail due to invalid amount");
+
+        // Attempt to update balance using ComponentB
+        assertThrows(IllegalArgumentException.class, () -> {
+            componentB.updateBalance(userId, amount, userBalance);
+        }, "Should throw exception due to invalid amount");
+    }
+
+    @Test
+    public void testTransactionVerificationFailure() {
+        String userId = "user123";
+        double amount = 50.0;
+        double userBalance = 100.0;
+
+        // Process payment using ComponentA
+        boolean paymentSuccess = componentA.processPayment(userId, amount, userBalance);
+        assertTrue(paymentSuccess, "Payment should be successful");
+
+        // Update balance using ComponentB with correct amount
+        double updatedBalance = componentB.updateBalance(userId, amount, userBalance);
+
+        // Manipulate the updated balance to simulate an incorrect balance
+        double incorrectBalance = updatedBalance + 10.0;
+
+        // Verify transaction should fail
+        boolean transactionVerified = componentB.verifyTransaction(userId, amount, userBalance, incorrectBalance);
+        assertFalse(transactionVerified, "Transaction verification should fail due to incorrect balance");
+    }
+
+    @Test
+    public void testUpdateBalanceWithInvalidAmount() {
+        String userId = "user123";
+        double amount = -20.0;
+        double userBalance = 100.0;
+
+        // Attempt to update balance with invalid amount
+        assertThrows(IllegalArgumentException.class, () -> {
+            componentB.updateBalance(userId, amount, userBalance);
+        }, "Should throw exception due to invalid amount");
+    }
+
+    @Test
+    public void testUpdateBalanceWithInsufficientBalance() {
+        String userId = "user123";
+        double amount = 120.0;
+        double userBalance = 100.0;
+
+        // Attempt to update balance with insufficient balance
+        assertThrows(IllegalArgumentException.class, () -> {
+            componentB.updateBalance(userId, amount, userBalance);
+        }, "Should throw exception due to insufficient balance");
+    }
+
+    @Test
+    public void testProcessPaymentWithZeroAmount() {
+        String userId = "user123";
+        double amount = 0.0;
+        double userBalance = 100.0;
+
+        // Process payment with zero amount
+        boolean paymentSuccess = componentA.processPayment(userId, amount, userBalance);
+        assertFalse(paymentSuccess, "Payment should fail due to zero amount");
+    }
+
+    @Test
+    public void testProcessPaymentWithNullUserId() {
+        String userId = null;
+        double amount = 50.0;
+        double userBalance = 100.0;
+
+        // Process payment with null userId
+        boolean paymentSuccess = componentA.processPayment(userId, amount, userBalance);
+        assertTrue(paymentSuccess, "Payment should be successful even with null userId");
+
+        // Update balance
+        double updatedBalance = componentB.updateBalance(userId, amount, userBalance);
+        assertEquals(50.0, updatedBalance, 0.001, "Balance should be updated correctly");
+
+        // Verify transaction
+        boolean transactionVerified = componentB.verifyTransaction(userId, amount, userBalance, updatedBalance);
+        assertTrue(transactionVerified, "Transaction should be verified successfully");
+    }
+}

@@ -1,0 +1,80 @@
+```java
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
+
+public class ComponentIntegrationTest {
+
+    private ComponentA componentA;
+    private ComponentB componentB;
+    private final String userId = "user-123";
+    private final String message = "Test notification";
+
+    @BeforeEach
+    void setUp() {
+        componentA = new ComponentA();
+        componentB = new ComponentB();
+    }
+
+    @Test
+    void sendAndVerifyNotification_Success() {
+        boolean sent = componentA.sendNotification(userId, message);
+        assertTrue(sent);
+        assertTrue(componentB.verifyNotificationReceived(
+            componentA.getNotificationLogs(),
+            userId,
+            message
+        ));
+    }
+
+    @Test
+    void sendInvalidNotification_DoesNotLog() {
+        assertFalse(componentA.sendNotification(null, message));
+        assertFalse(componentB.verifyNotificationReceived(
+            componentA.getNotificationLogs(),
+            null,
+            message
+        ));
+    }
+
+    @Test
+    void verifyFailsWithWrongMessage() {
+        componentA.sendNotification(userId, message);
+        assertFalse(componentB.verifyNotificationReceived(
+            componentA.getNotificationLogs(),
+            userId,
+            "Wrong message"
+        ));
+    }
+
+    @Test
+    void verifyFailsWithUnsentUser() {
+        componentA.sendNotification(userId, message);
+        assertFalse(componentB.verifyNotificationReceived(
+            componentA.getNotificationLogs(),
+            "invalid-user",
+            message
+        ));
+    }
+
+    @Test
+    void verifyWithNullParameters_ReturnsFalse() {
+        componentA.sendNotification(userId, message);
+        assertFalse(componentB.verifyNotificationReceived(
+            null,
+            userId,
+            message
+        ));
+        assertFalse(componentB.verifyNotificationReceived(
+            componentA.getNotificationLogs(),
+            null,
+            message
+        ));
+        assertFalse(componentB.verifyNotificationReceived(
+            componentA.getNotificationLogs(),
+            userId,
+            null
+        ));
+    }
+}
+```

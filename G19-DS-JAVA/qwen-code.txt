@@ -1,0 +1,145 @@
+
+import static org.junit.jupiter.api.Assertions.*;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
+import java.util.List;
+
+class IntegrationTest {
+
+    private ComponentA componentA;
+    private ComponentB componentB;
+
+    @BeforeEach
+    void setUp() {
+        componentA = new ComponentA();
+        componentB = new ComponentB();
+    }
+
+    @Test
+    void testIntegrationComponentAAndComponentB() {
+        // Valid notification data
+        String userId = "user123";
+        String message = "Your order has been shipped.";
+
+        // Send notification using ComponentA
+        boolean isSent = componentA.sendNotification(userId, message);
+        assertTrue(isSent);
+
+        // Retrieve the notification logs using ComponentA
+        List<String> notificationLogs = componentA.getNotificationLogs();
+
+        // Verify the notification was received using ComponentB
+        boolean isVerified = componentB.verifyNotificationReceived(notificationLogs, userId, message);
+        assertTrue(isVerified);
+    }
+
+    @Test
+    void testInvalidUserIdComponentA() {
+        // Invalid user ID (null)
+        String userId = null;
+        String message = "Your order has been shipped.";
+
+        // Send notification using ComponentA
+        boolean isSent = componentA.sendNotification(userId, message);
+        assertFalse(isSent);
+
+        // Retrieve the notification logs using ComponentA
+        List<String> notificationLogs = componentA.getNotificationLogs();
+
+        // Verify the notification was not received using ComponentB
+        boolean isVerified = componentB.verifyNotificationReceived(notificationLogs, userId, message);
+        assertFalse(isVerified);
+    }
+
+    @Test
+    void testInvalidMessageComponentA() {
+        // Invalid message (null)
+        String userId = "user123";
+        String message = null;
+
+        // Send notification using ComponentA
+        boolean isSent = componentA.sendNotification(userId, message);
+        assertFalse(isSent);
+
+        // Retrieve the notification logs using ComponentA
+        List<String> notificationLogs = componentA.getNotificationLogs();
+
+        // Verify the notification was not received using ComponentB
+        boolean isVerified = componentB.verifyNotificationReceived(notificationLogs, userId, message);
+        assertFalse(isVerified);
+    }
+
+    @Test
+    void testBothInvalidComponentA() {
+        // Both user ID and message are null
+        String userId = null;
+        String message = null;
+
+        // Send notification using ComponentA
+        boolean isSent = componentA.sendNotification(userId, message);
+        assertFalse(isSent);
+
+        // Retrieve the notification logs using ComponentA
+        List<String> notificationLogs = componentA.getNotificationLogs();
+
+        // Verify the notification was not received using ComponentB
+        boolean isVerified = componentB.verifyNotificationReceived(notificationLogs, userId, message);
+        assertFalse(isVerified);
+    }
+
+    @Test
+    void testVerifyNotificationReceivedWithInvalidLogsComponentB() {
+        // Invalid logs (null)
+        List<String> notificationLogs = null;
+        String userId = "user123";
+        String message = "Your order has been shipped.";
+
+        // Verify the notification was received using ComponentB
+        boolean isVerified = componentB.verifyNotificationReceived(notificationLogs, userId, message);
+        assertFalse(isVerified);
+    }
+
+    @Test
+    void testVerifyNotificationReceivedWithInvalidUserIdComponentB() {
+        // Invalid user ID (null)
+        List<String> notificationLogs = componentA.getNotificationLogs();
+        String userId = null;
+        String message = "Your order has been shipped.";
+
+        // Verify the notification was received using ComponentB
+        boolean isVerified = componentB.verifyNotificationReceived(notificationLogs, userId, message);
+        assertFalse(isVerified);
+    }
+
+    @Test
+    void testVerifyNotificationReceivedWithInvalidMessageComponentB() {
+        // Invalid message (null)
+        List<String> notificationLogs = componentA.getNotificationLogs();
+        String userId = "user123";
+        String message = null;
+
+        // Verify the notification was received using ComponentB
+        boolean isVerified = componentB.verifyNotificationReceived(notificationLogs, userId, message);
+        assertFalse(isVerified);
+    }
+
+    @Test
+    void testMismatchedNotificationComponentB() {
+        // Mismatched notification message
+        String userId = "user123";
+        String message = "Your order has been shipped.";
+        String mismatchedMessage = "Your order is being processed.";
+
+        // Send notification using ComponentA
+        componentA.sendNotification(userId, message);
+
+        // Retrieve the notification logs using ComponentA
+        List<String> notificationLogs = componentA.getNotificationLogs();
+
+        // Verify the notification was received using ComponentB with mismatched message
+        boolean isVerified = componentB.verifyNotificationReceived(notificationLogs, userId, mismatchedMessage);
+        assertFalse(isVerified);
+    }
+}

@@ -1,0 +1,56 @@
+import static org.junit.jupiter.api.Assertions.*;
+import org.junit.jupiter.api.Test;
+
+class ComponentIntegrationTest {
+
+    @Test
+    void successFlow_ValidConversionAndVerification() {
+        ComponentA componentA = new ComponentA();
+        ComponentB componentB = new ComponentB();
+        
+        String originalContent = "Sample Document";
+        String targetFormat = "Word";
+        String converted = componentA.convertDocument(originalContent, targetFormat);
+        String expected = "Converted to Word: Sample Document";
+        
+        assertTrue(componentB.verifyDocumentContent(converted, expected));
+    }
+
+    @Test
+    void invalidInput_NullContentThrowsException() {
+        ComponentA componentA = new ComponentA();
+        assertThrows(IllegalArgumentException.class, () ->
+            componentA.convertDocument(null, "PDF")
+        );
+    }
+
+    @Test
+    void edgeCase_EmptyDocumentContent() {
+        ComponentA componentA = new ComponentA();
+        ComponentB componentB = new ComponentB();
+        
+        String converted = componentA.convertDocument("", "TXT");
+        assertTrue(componentB.verifyDocumentContent(converted, "Converted to TXT: "));
+    }
+
+    @Test
+    void mismatchContent_VerificationFails() {
+        ComponentA componentA = new ComponentA();
+        ComponentB componentB = new ComponentB();
+        
+        String converted = componentA.convertDocument("Test", "HTML");
+        assertFalse(componentB.verifyDocumentContent(converted, "Incorrect expected content"));
+    }
+
+    @Test
+    void edgeCase_LongDocumentHandling() {
+        ComponentA componentA = new ComponentA();
+        ComponentB componentB = new ComponentB();
+        
+        String longContent = "A".repeat(10000);
+        String converted = componentA.convertDocument(longContent, "PDF");
+        String expected = "Converted to PDF: " + longContent;
+        
+        assertTrue(componentB.verifyDocumentContent(converted, expected));
+    }
+}

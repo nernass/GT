@@ -1,0 +1,58 @@
+import static org.junit.jupiter.api.Assertions.*;
+import org.junit.jupiter.api.Test;
+import java.util.List;
+
+class ComponentIntegrationTest {
+
+    @Test
+    void successFlow_ValidEmailAndMessage() {
+        ComponentA componentA = new ComponentA();
+        ComponentB componentB = new ComponentB();
+        String email = "test@example.com";
+        String message = "Confirmation code: 1234";
+        
+        boolean isSent = componentA.sendConfirmationEmail(email, message);
+        assertTrue(isSent);
+        
+        List<String> logs = componentA.getEmailLogs();
+        assertTrue(componentB.verifyEmailSent(logs, email, message));
+    }
+
+    @Test
+    void invalidInput_NullEmailFails() {
+        ComponentA componentA = new ComponentA();
+        ComponentB componentB = new ComponentB();
+        
+        boolean isSent = componentA.sendConfirmationEmail(null, "message");
+        assertFalse(isSent);
+        assertTrue(componentA.getEmailLogs().isEmpty());
+    }
+
+    @Test
+    void edgeCase_EmptyMessageStillLogged() {
+        ComponentA componentA = new ComponentA();
+        ComponentB componentB = new ComponentB();
+        String email = "empty@test.com";
+        String message = "";
+        
+        boolean isSent = componentA.sendConfirmationEmail(email, message);
+        assertTrue(isSent);
+        
+        List<String> logs = componentA.getEmailLogs();
+        assertTrue(componentB.verifyEmailSent(logs, email, message));
+    }
+
+    @Test
+    void edgeCase_LongEmailAddressHandling() {
+        ComponentA componentA = new ComponentA();
+        ComponentB componentB = new ComponentB();
+        String email = "very.long.email.address@extremely.long.domain.example.com";
+        String message = "Test";
+        
+        boolean isSent = componentA.sendConfirmationEmail(email, message);
+        assertTrue(isSent);
+        
+        List<String> logs = componentA.getEmailLogs();
+        assertTrue(componentB.verifyEmailSent(logs, email, message));
+    }
+}

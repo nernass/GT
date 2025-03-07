@@ -1,0 +1,74 @@
+import static org.junit.jupiter.api.Assertions.*;
+import org.junit.jupiter.api.Test;
+import java.util.List;
+
+class ComponentIntegrationTest {
+
+    @Test
+    void successFlow_NotificationSentAndVerified() {
+        ComponentA componentA = new ComponentA();
+        ComponentB componentB = new ComponentB();
+        
+        String userId = "user-123";
+        String message = "System update at 3 AM";
+        
+        boolean sendResult = componentA.sendNotification(userId, message);
+        assertTrue(sendResult);
+        
+        List<String> logs = componentA.getNotificationLogs();
+        assertTrue(componentB.verifyNotificationReceived(logs, userId, message));
+    }
+
+    @Test
+    void invalidInput_NullParametersBlockSending() {
+        ComponentA componentA = new ComponentA();
+        ComponentB componentB = new ComponentB();
+        
+        assertFalse(componentA.sendNotification(null, "valid-msg"));
+        assertFalse(componentA.sendNotification("valid-id", null));
+        assertTrue(componentA.getNotificationLogs().isEmpty());
+    }
+
+    @Test
+    void edgeCase_EmptyMessageHandling() {
+        ComponentA componentA = new ComponentA();
+        ComponentB componentB = new ComponentB();
+        
+        String userId = "user-456";
+        String emptyMsg = "";
+        
+        assertTrue(componentA.sendNotification(userId, emptyMsg));
+        List<String> logs = componentA.getNotificationLogs();
+        assertTrue(componentB.verifyNotificationReceived(logs, userId, emptyMsg));
+    }
+
+    @Test
+    void edgeCase_LongUserIdValidation() {
+        ComponentA componentA = new ComponentA();
+        ComponentB componentB = new ComponentB();
+        
+        String longUserId = "user-" + "a".repeat(1000);
+        String message = "Test long user ID";
+        
+        assertTrue(componentA.sendNotification(longUserId, message));
+        List<String> logs = componentA.getNotificationLogs();
+        assertTrue(componentB.verifyNotificationReceived(logs, longUserId, message));
+    }
+
+    @Test
+    void verificationFailure_WhenNotificationNotSent() {
+        ComponentA componentA = new ComponentA();
+        ComponentB componentB = new ComponentB();
+        
+        List<String> logs = componentA.getNotificationLogs();
+        assertFalse(componentB.verifyNotificationReceived(logs, "ghost-user", "Non-existent message"));
+    }
+
+    @Test
+    void nullParameters_VerificationFails() {
+        ComponentB componentB = new ComponentB();
+        assertFalse(componentB.verifyNotificationReceived(null, "user-789", "msg"));
+        assertFalse(componentB.verifyNotificationReceived(List.of(), null, "msg"));
+        assertFalse(componentB.verifyNotificationReceived(List.of(), "user-789", null));
+    }
+}

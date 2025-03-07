@@ -1,0 +1,77 @@
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
+
+import java.util.List;
+
+public class IntegrationTest {
+
+    private ComponentA componentA;
+    private ComponentB componentB;
+
+    @BeforeEach
+    public void setUp() {
+        // Placeholder for any required setup
+        componentA = new ComponentA();
+        componentB = new ComponentB();
+    }
+
+    @Test
+    public void testSendNotificationAndVerify() {
+        String userId = "user123";
+        String message = "Welcome to our service!";
+
+        // Send a notification using ComponentA
+        boolean notificationSent = componentA.sendNotification(userId, message);
+        assertTrue(notificationSent, "Notification should be sent successfully.");
+
+        // Retrieve the notification logs from ComponentA
+        List<String> notificationLogs = componentA.getNotificationLogs();
+        assertNotNull(notificationLogs, "Notification logs should not be null.");
+
+        // Verify the notification using ComponentB
+        boolean notificationVerified = componentB.verifyNotificationReceived(notificationLogs, userId, message);
+        assertTrue(notificationVerified, "Notification should be verified successfully.");
+    }
+
+    @Test
+    public void testSendNotification_NullParameters() {
+        String userId = null;
+        String message = null;
+
+        // Attempt to send a notification with null parameters
+        boolean notificationSent = componentA.sendNotification(userId, message);
+        assertFalse(notificationSent, "Notification should not be sent with null parameters.");
+    }
+
+    @Test
+    public void testVerifyNotificationReceived_NullParameters() {
+        List<String> notificationLogs = componentA.getNotificationLogs();
+
+        // Attempt to verify a notification with null parameters
+        boolean notificationVerified = componentB.verifyNotificationReceived(notificationLogs, null, null);
+        assertFalse(notificationVerified, "Verification should fail with null parameters.");
+    }
+
+    @Test
+    public void testVerifyNotification_NotFound() {
+        String userId = "user123";
+        String message = "Welcome to our service!";
+        String wrongUserId = "user456";
+        String wrongMessage = "Incorrect message";
+
+        // Send a notification
+        componentA.sendNotification(userId, message);
+
+        // Retrieve notification logs
+        List<String> notificationLogs = componentA.getNotificationLogs();
+
+        // Verify with incorrect userId
+        boolean verificationResultUser = componentB.verifyNotificationReceived(notificationLogs, wrongUserId, message);
+        assertFalse(verificationResultUser, "Verification should fail with incorrect userId.");
+
+        // Verify with incorrect message
+        boolean verificationResultMessage = componentB.verifyNotificationReceived(notificationLogs, userId, wrongMessage);
+        assertFalse(verificationResultMessage, "Verification should fail with incorrect message.");
+    }
+}

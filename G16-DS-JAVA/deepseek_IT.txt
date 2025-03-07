@@ -1,0 +1,60 @@
+```java
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
+
+public class ComponentIntegrationTest {
+
+    private ComponentA componentA;
+    private ComponentB componentB;
+    private final String validEmail = "user@example.com";
+    private final String validMessage = "Confirm your account";
+
+    @BeforeEach
+    void setUp() {
+        componentA = new ComponentA();
+        componentB = new ComponentB();
+    }
+
+    @Test
+    void sendAndVerifyEmail_Success() {
+        boolean sent = componentA.sendConfirmationEmail(validEmail, validMessage);
+        assertTrue(sent);
+        assertTrue(componentB.verifyEmailSent(
+            componentA.getEmailLogs(),
+            validEmail,
+            validMessage
+        ));
+    }
+
+    @Test
+    void sendInvalidEmail_DoesNotLog() {
+        boolean sent = componentA.sendConfirmationEmail(null, validMessage);
+        assertFalse(sent);
+        assertFalse(componentB.verifyEmailSent(
+            componentA.getEmailLogs(),
+            null,
+            validMessage
+        ));
+    }
+
+    @Test
+    void verifyFailsWithWrongMessage() {
+        componentA.sendConfirmationEmail(validEmail, validMessage);
+        assertFalse(componentB.verifyEmailSent(
+            componentA.getEmailLogs(),
+            validEmail,
+            "Wrong message"
+        ));
+    }
+
+    @Test
+    void verifyFailsWithUnsentEmail() {
+        assertFalse(componentB.verifyEmailSent(
+            componentA.getEmailLogs(),
+            "nonexistent@test.com",
+            "No message"
+        ));
+    }
+}
+```

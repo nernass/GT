@@ -1,0 +1,45 @@
+```java
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
+
+public class ComponentIntegrationTest {
+
+    private ComponentA componentA;
+    private ComponentB componentB;
+
+    @BeforeEach
+    void setUp() {
+        componentA = new ComponentA();
+        componentB = new ComponentB();
+    }
+
+    @Test
+    void testGenerateAndSaveUniqueId_Success() {
+        String id = componentA.generateUniqueId();
+        assertTrue(componentB.saveResource(id));
+        assertTrue(componentB.getSavedResourceIds().contains(id));
+    }
+
+    @Test
+    void testSaveDuplicateId_Fails() {
+        String id = componentA.generateUniqueId();
+        componentB.saveResource(id);
+        assertFalse(componentB.saveResource(id));
+    }
+
+    @Test
+    void testSaveNullId_ThrowsException() {
+        assertThrows(IllegalArgumentException.class, () ->
+            componentB.saveResource(null)
+        );
+    }
+
+    @Test
+    void testSaveEmptyId_ThrowsException() {
+        assertThrows(IllegalArgumentException.class, () ->
+            componentB.saveResource("")
+        );
+    }
+}
+```

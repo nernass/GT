@@ -1,0 +1,81 @@
+import static org.junit.jupiter.api.Assertions.*;
+import org.junit.jupiter.api.Test;
+
+class ComponentIntegrationTest {
+
+    @Test
+    void successFlow_ValidPaymentUpdatesBalance() {
+        ComponentA componentA = new ComponentA();
+        ComponentB componentB = new ComponentB();
+        String userId = "user123";
+        double amount = 50.0;
+        double initialBalance = 100.0;
+
+        // Process payment
+        boolean paymentSuccess = componentA.processPayment(userId, amount, initialBalance);
+        assertTrue(paymentSuccess);
+
+        // Update balance
+        double updatedBalance = componentB.updateBalance(userId, amount, initialBalance);
+        assertEquals(50.0, updatedBalance);
+
+        // Verify transaction
+        assertTrue(componentB.verifyTransaction(userId, amount, initialBalance, updatedBalance));
+    }
+
+    @Test
+    void insufficientBalance_PaymentFails() {
+        ComponentA componentA = new ComponentA();
+        ComponentB componentB = new ComponentB();
+        String userId = "user456";
+        double amount = 200.0;
+        double initialBalance = 100.0;
+
+        // Attempt payment
+        boolean paymentSuccess = componentA.processPayment(userId, amount, initialBalance);
+        assertFalse(paymentSuccess);
+
+        // Ensure balance update is blocked
+        assertThrows(IllegalArgumentException.class, () ->
+            componentB.updateBalance(userId, amount, initialBalance)
+        );
+    }
+
+    @Test
+    void edgeCase_ExactBalanceDeduction() {
+        ComponentA componentA = new ComponentA();
+        ComponentB componentB = new ComponentB();
+        String userId = "user789";
+        double amount = 75.0;
+        double initialBalance = 75.0;
+
+        // Process payment
+        boolean paymentSuccess = componentA.processPayment(userId, amount, initialBalance);
+        assertTrue(paymentSuccess);
+
+        // Update balance
+        double updatedBalance = componentB.updateBalance(userId, amount, initialBalance);
+        assertEquals(0.0, updatedBalance);
+
+        // Verify transaction
+        assertTrue(componentB.verifyTransaction(userId, amount, initialBalance, updatedBalance));
+    }
+
+    @Test
+    void invalidAmount_NegativeValue() {
+        ComponentA componentA = new ComponentA();
+        ComponentB componentB = new ComponentB();
+        String userId = "user000";
+        double amount = -10.0;
+        double initialBalance = 100.0;
+
+        // Attempt payment
+        boolean paymentSuccess = componentA.processPayment(userId, amount, initialBalance);
+        assertFalse(paymentSuccess);
+
+        // Ensure balance update is blocked
+        assertThrows(IllegalArgumentException.class, () ->
+            componentB.updateBalance(userId, amount, initialBalance)
+        );
+    }
+}
